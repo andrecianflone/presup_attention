@@ -8,7 +8,7 @@ class Attn():
   def __init__(self,params, embedding):
     """
     Args:
-      hparams: hyper param instance
+      params: hyper param instance
     """
     global hp
     hp = params
@@ -51,40 +51,52 @@ class Attn():
                                 cell_bw, self.embedded, self.input_len)
 
     # Pair-wise score
-    p_w = self.pair_wise_matching(self.encoded_outputs)
+    self.p_w = self.pair_wise_matching(self.encoded_outputs)
 
     # Attn matrices
-    # col_attn, row_attn = self.attn_matrices(p_w, self.input_len,
-                                                          # self.batch_size, 60)
+    col_attn, row_attn = self.attn_matrices(self.p_w, self.input_len,
+                                                          self.batch_size)
 
+    self.concat = self.concat_attn(col_attn, row_attn)
+    # Logits
     # Simple output layer
     # x = dense(x, in_dim, out_dim, act=tf.nn.relu, scope=layer_name)
     # x = tf.nn.dropout(x, self.keep_prob)
-    out_dim=2
-    # logits = dense(x, out_dim, hp.num_classes, act=None, scope="class_log")
+    in_dim = hp.max_seq_len**2*2
+    self.logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
 
     ############################
     # Loss/Optimize
     ############################
     # Build loss
-    # self.loss = self.classification_loss(self.labels, self.logits)
-    # self.cost = tf.reduce_mean(self.loss) # average across batch
+    self.loss = self.classification_loss(self.labels, self.logits)
+    self.cost = tf.reduce_mean(self.loss) # average across batch
 
     # Predictions
-    # self.y_pred, self.y_true = self.predict(self.labels, self.logits)
+    self.y_pred, self.y_true = self.predict(self.labels, self.logits)
 
     # Optimize
-    # self.optimize = self.optimize_step(self.cost,self.global_step)
+    self.optimize = self.optimize_step(self.cost,self.global_step)
+
+  def concat_attn(self, col_attn, row_attn):
+    """ Reshape and concat the normalized attention """
+    flat_col_dim = tf.shape(col_attn)[1]*tf.shape(col_attn)[2]
+    flat_col = tf.reshape(col_attn, [-1, flat_col_dim])
+    flat_row_dim = tf.shape(row_attn)[1]*tf.shape(row_attn)[2]
+    flat_row = tf.reshape(row_attn, [-1, flat_row_dim])
+    concat = tf.concat([flat_col, flat_row], 1)
+    return concat
 
   def pair_wise_matching(self, rnn_h):
     """
+    Returns pair-wise matching matrix of shape [batch_size, time, time]
     Args:
       rnn_h: rnn hidden states over time (output of dynamic encoder)
     """
     # Since rnn_h is [batch_size, time, h_size], transpose 2 and 1 dim
     x = tf.transpose(rnn_h, perm=[0, 2, 1])
     # Output of matmul should be [batch_size, time,time]
-    p_w = tf.matmul(x,rnn_h)
+    p_w = tf.matmul(rnn_h,x)
     return p_w
 
   def attn_matrices(self, p_w, input_len, batch_size):
@@ -92,10 +104,12 @@ class Attn():
     Create column-wise and row-wise softmax, masking 0
     Based on https://arxiv.org/abs/1607.04423
     """
-    # ones = np.ones([dim,dim])
-    # ones[input_len[:,None] <= np.arange(input_len.shape[1])] = 0
-    # r = np.expand_dims(p,1)
-    return 0,1
+    # Softmax over 2nd dim
+    rows = tf.nn.softmax(p_w, dim=1)
+    # Softmax over 3rd dim
+    cols = tf.nn.softmax(p_w, dim=2)
+
+    return rows, cols
 
   def embedded(self, word_ids, embedding_tensor, scope="embedding"):
     """Swap ints for dense embeddings, on cpu.
@@ -135,7 +149,8 @@ class Attn():
   def encoder_bi(self, cell_fw, cell_bw, x, seq_len, init_state_fw=None,
                   init_state_bw=None):
     """
-    Dynamic bidirectional encoder
+    Dynamic bidirectional encoder. For each x in the batch, the outputs beyond
+    seq_len will be zeroed out.
     Args:
       cell_fw: forward cell
       cell_bw: backward cell
@@ -175,11 +190,11 @@ class Attn():
     return outputs, state
 
   def optimize_step(self, loss, glbl_step):
-    """ Locate optimizer from hparams, take a step """
-    Opt = locate("tensorflow.train." + hparams.optimizer)
+    """ Locate optimizer from hp, take a step """
+    Opt = locate("tensorflow.train." + hp.optimizer)
     if Opt is None:
-      raise ValueError("Invalid optimizer: " + hparams.optimizer)
-    optimizer = Opt(hparams.l_rate)
+      raise ValueError("Invalid optimizer: " + hp.optimizer)
+    optimizer = Opt(hp.l_rate)
     grads_vars = optimizer.compute_gradients(loss)
     capped_grads = [(None if grad is None else tf.clip_by_value(grad, -1., 1.), var)\
                                                   for grad, var in grads_vars]
@@ -208,11 +223,11 @@ class Attn():
 
     return y_pred, y_true
 
-def dense(self, x, in_dim, out_dim, scope, act=None):
+def dense(x, in_dim, out_dim, scope, act=None):
   """ Fully connected layer builder"""
   with tf.variable_scope(scope):
     weights = tf.get_variable("weights", shape=[in_dim, out_dim],
-              dtype=tf.float32, initializer=glorot())
+              dtype=tf.float32, initializer=tf.orthogonal_initializer())
     biases = tf.get_variable("biases", out_dim,
               dtype=tf.float32, initializer=tf.constant_initializer(0.0))
     # Pre activation

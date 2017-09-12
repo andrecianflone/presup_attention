@@ -36,7 +36,11 @@ if __name__=="__main__":
     emb_trainable = True,
     batch_size    = 32,
     max_seq_len   = 60,
+    max_epochs    = 20,
+    early_stop    = 10,
+    keep_prob     = 0.5,
     num_classes   = 2,
+    l_rate        = 0.001,
     cell_units    = 32,
     cell_type     = 'LSTMCell',
     optimizer     = 'AdamOptimizer'
