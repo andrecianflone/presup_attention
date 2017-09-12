@@ -22,7 +22,7 @@ class HParams():
 if __name__=="__main__":
   # Get data
   path="../presup_wsj/"
-  emb, word_to_id, trX, trY, teX, teY = load_data(path)
+  emb, word_idx_map, trX, trXlen, trY, teX, teXlen, teY = load_data(path)
 
   # Data info
   print('size of sets:')
@@ -33,13 +33,13 @@ if __name__=="__main__":
 
   # Hyper params
   hp = HParams(
-    emb_trainable  = True,
-    batch_size     = 32,
-    max_seq_len    = 68,
-    num_classes = 2,
-    cell_units     = 32,
-    cell_type      = 'LSTMCell',
-    optimizer      = 'AdamOptimizer'
+    emb_trainable = True,
+    batch_size    = 32,
+    max_seq_len   = 60,
+    num_classes   = 2,
+    cell_units    = 32,
+    cell_type     = 'LSTMCell',
+    optimizer     = 'AdamOptimizer'
   )
 
-  train_model(hp, emb, trX, trY, teX, teY)
+  train_model(hp, emb, trX, trXlen, trY, teX, teXlen, teY)

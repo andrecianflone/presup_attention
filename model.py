@@ -1,4 +1,4 @@
-
+import numpy as np
 from pydoc import locate
 import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer as glorot
@@ -54,26 +54,27 @@ class Attn():
     p_w = self.pair_wise_matching(self.encoded_outputs)
 
     # Attn matrices
-    col_attn, row_attn = self.attn_matrices(p_w, self.input_len,
-                                                          self.batch_size, dim)
+    # col_attn, row_attn = self.attn_matrices(p_w, self.input_len,
+                                                          # self.batch_size, 60)
 
     # Simple output layer
     # x = dense(x, in_dim, out_dim, act=tf.nn.relu, scope=layer_name)
     # x = tf.nn.dropout(x, self.keep_prob)
-    logits = dense(x, out_dim, num_classes, act=None, scope="class_log")
+    out_dim=2
+    # logits = dense(x, out_dim, hp.num_classes, act=None, scope="class_log")
 
     ############################
     # Loss/Optimize
     ############################
     # Build loss
-    self.loss = self.classification_loss(self.labels, self.logits)
-    self.cost = tf.reduce_mean(self.loss) # average across batch
+    # self.loss = self.classification_loss(self.labels, self.logits)
+    # self.cost = tf.reduce_mean(self.loss) # average across batch
 
     # Predictions
-    self.y_pred, self.y_true = self.predict(self.labels, self.logits)
+    # self.y_pred, self.y_true = self.predict(self.labels, self.logits)
 
     # Optimize
-    self.optimize = self.optimize_step(self.cost,self.global_step)
+    # self.optimize = self.optimize_step(self.cost,self.global_step)
 
   def pair_wise_matching(self, rnn_h):
     """
@@ -91,10 +92,10 @@ class Attn():
     Create column-wise and row-wise softmax, masking 0
     Based on https://arxiv.org/abs/1607.04423
     """
-    dims = tf.shape(p_w)[2]
-    ones = np.ones([dims,dims])
-    ones[input_len[:,None] <= np.arange(d.shape[1])] = 0
-    r = np.expand_dims(p,1)
+    # ones = np.ones([dim,dim])
+    # ones[input_len[:,None] <= np.arange(input_len.shape[1])] = 0
+    # r = np.expand_dims(p,1)
+    return 0,1
 
   def embedded(self, word_ids, embedding_tensor, scope="embedding"):
     """Swap ints for dense embeddings, on cpu.
