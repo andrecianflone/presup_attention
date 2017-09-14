@@ -1,10 +1,44 @@
 # Author: Andre Cianflone
 import tensorflow as tf
-from model import Attn
+from model import Attn, AttnAttn
+from utils import Progress
 import numpy as np
 from sklearn.metrics import accuracy_score
-random_seed = 1
+random_seed=1
 np.random.seed(seed=random_seed)
+
+def train_model(params, emb, trX, trXlen, trY, teX, teXlen, teY):
+  global hp
+  hp = params
+  n_tr_batches = calc_num_batches(trX)
+  prog = Progress(n_tr_batches)
+  best_acc = 0
+  best_epoch = 0
+
+  # Start tf session
+  with tf.Graph().as_default(), tf.Session() as sess:
+    tf.set_random_seed(random_seed)
+    model = AttnAttn(hp, emb)
+    # model = Attn(hp, emb)
+    tf.global_variables_initializer().run()
+
+    # Begin training and occasional validation
+    for epoch in range(hp.max_epochs):
+      prog.epoch_start()
+      for batch in make_batches(trX, trXlen, trY, shuffle=True):
+        fetch = [model.optimize, model.cost, model.global_step]
+        _, cost, step = call_model(sess, model, batch, fetch, hp.keep_prob, mode=1)
+        prog.print_train(cost)
+        # if step%10==0:
+          # print('ep {} step {} - cost {}'.format(epoch, step, cost))
+        if step%20==0:
+          acc = accuracy(sess, teX, teXlen, teY, model)
+          if acc>best_acc:
+            best_acc = acc
+            best_epoch = epoch
+          prog.print_eval('val acc',acc)
+    prog.train_end()
+    print('Best epoch {}, acc: {}'.format(best_epoch, best_acc))
 
 def make_batches(x, x_len, y, shuffle=True):
   """ Yields the data object with all properties sliced """
@@ -18,6 +52,12 @@ def make_batches(x, x_len, y, shuffle=True):
     end_index = min((batch_num + 1) * hp.batch_size, data_size)
     new_indices = indices[start_index:end_index]
     yield (x[new_indices], x_len[new_indices], y[new_indices])
+
+def calc_num_batches(x):
+  """ Return number of batches for this set """
+  data_size = len(x)
+  num_batches = data_size//hp.batch_size+(data_size%hp.batch_size>0)
+  return num_batches
 
 def one_hot(arr):
   """ One-hot encode, where values interpreted as index of non-zero column """
@@ -64,25 +104,3 @@ def decoder_mask():
   ones[trXlen[:,None] <= np.arange(trXlen.shape[1])] = 0
   np.repeat(d[:, :, np.newaxis], 2, axis=2)
 
-def train_model(params, emb, trX, trXlen, trY, teX, teXlen, teY):
-  global hp
-  hp = params
-  best_acc = 0
-  best_epoch = 0
-  with tf.Graph().as_default(), tf.Session() as sess:
-    tf.set_random_seed(random_seed)
-    model = Attn(hp, emb)
-    tf.global_variables_initializer().run()
-    for epoch in range(hp.max_epochs):
-      for batch in make_batches(trX, trXlen, trY, shuffle=True):
-        fetch = [model.optimize, model.cost, model.global_step]
-        _, cost, step = call_model(sess, model, batch, fetch, hp.keep_prob, mode=1)
-        if step%10==0:
-          print('ep {} step {} - cost {}'.format(epoch, step, cost))
-        if step%20==0:
-          acc = accuracy(sess, teX, teXlen, teY, model)
-          if acc>best_acc:
-            best_acc = acc
-            best_epoch = epoch
-          print('*********** {}'.format(acc))
-    print('Best epoch {}, acc: {}'.format(best_epoch, best_acc))

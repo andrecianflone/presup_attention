@@ -55,10 +55,10 @@ class Attn():
     self.p_w = self.pair_wise_matching(self.encoded_outputs)
 
     # Attn matrices
-    col_attn, row_attn = self.attn_matrices(self.p_w, self.input_len,
+    self.col_attn, self.row_attn = self.attn_matrices(self.p_w, self.input_len,
                                                           self.batch_size)
 
-    self.logits = self.get_logits()
+    self.logits = self.get_logits(self.col_attn,self.row_attn)
 
     ############################
     # Loss/Optimize
@@ -228,7 +228,7 @@ class Attn():
 
     return y_pred, y_true
 
-class AttnAttn(EncDec):
+class AttnAttn(Attn):
   """
   Attn over attn, uses most of the following except final layer:
   https://arxiv.org/pdf/1607.04423.pdf
@@ -241,13 +241,15 @@ class AttnAttn(EncDec):
     """
     Average the softmax matrices
     """
-    # For the row-wise softmax, we want column-wise average -> dim 0
+    # For the row-wise softmax tensor, we want column-wise average -> dim 1
     # This results in a vector shape [sequence len]
-    col_av = tf.nn.reduce_mean(row_attn, axis=0)
+    col_av = tf.reduce_mean(row_attn, axis=1)
 
     # Attn-over-attn -> a dot product between column average vector and
     # column-wise softmax matrix. Result is a single vector [sequence len]
-    attnattn = tf.matmul(col_attn, col_av, transpose_a=True)
+    attnattn = tf.einsum('ajk,ak->aj',col_attn,col_av)
+    # attnattn = tf.matmul(col_attn, col_av)
+    # attnattn = tf.matmul(col_attn, col_av, transpose_b=True)
 
     # TODO: Do we need to flatten vector?
 
@@ -268,11 +270,4 @@ def dense(x, in_dim, out_dim, scope, act=None):
     if act:
       h = act(h)
     return h
-
-def seq_length(sequence):
-  """ Compute length on the fly in the graph, sequence is [batch, time, dim]"""
-  used = tf.sign(tf.reduce_max(tf.abs(sequence), 2))
-  length = tf.reduce_sum(used, 1)
-  length = tf.cast(length, tf.int32)
-  return length
 
