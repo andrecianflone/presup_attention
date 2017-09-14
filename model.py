@@ -1,3 +1,4 @@
+# Author: Andre Cianflone
 import numpy as np
 from pydoc import locate
 import tensorflow as tf
@@ -57,13 +58,7 @@ class Attn():
     col_attn, row_attn = self.attn_matrices(self.p_w, self.input_len,
                                                           self.batch_size)
 
-    self.concat = self.concat_attn(col_attn, row_attn)
-    # Logits
-    # Simple output layer
-    # x = dense(x, in_dim, out_dim, act=tf.nn.relu, scope=layer_name)
-    # x = tf.nn.dropout(x, self.keep_prob)
-    in_dim = hp.max_seq_len**2*2
-    self.logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
+    self.logits = self.get_logits()
 
     ############################
     # Loss/Optimize
@@ -78,7 +73,17 @@ class Attn():
     # Optimize
     self.optimize = self.optimize_step(self.cost,self.global_step)
 
-  def concat_attn(self, col_attn, row_attn):
+  def get_logits(self, col_attn, row_attn):
+    """
+    Default method for logits. Simply concat the attn matrices and connect
+    to output
+    """
+    self.concat = self.flat_concat(col_attn, row_attn)
+    in_dim = hp.max_seq_len**2*2
+    logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
+    return logits
+
+  def flat_concat(self, col_attn, row_attn):
     """ Reshape and concat the normalized attention """
     flat_col_dim = tf.shape(col_attn)[1]*tf.shape(col_attn)[2]
     flat_col = tf.reshape(col_attn, [-1, flat_col_dim])
@@ -222,6 +227,33 @@ class Attn():
     y_true = tf.argmax(labels, axis=1)
 
     return y_pred, y_true
+
+class AttnAttn(EncDec):
+  """
+  Attn over attn, uses most of the following except final layer:
+  https://arxiv.org/pdf/1607.04423.pdf
+  """
+  def __init__(self, params, embedding):
+    super().__init__(params, embedding)
+
+  # Override logits function
+  def get_logits(self, col_attn, row_attn):
+    """
+    Average the softmax matrices
+    """
+    # For the row-wise softmax, we want column-wise average -> dim 0
+    # This results in a vector shape [sequence len]
+    col_av = tf.nn.reduce_mean(row_attn, axis=0)
+
+    # Attn-over-attn -> a dot product between column average vector and
+    # column-wise softmax matrix. Result is a single vector [sequence len]
+    attnattn = tf.matmul(col_attn, col_av, transpose_a=True)
+
+    # TODO: Do we need to flatten vector?
+
+    in_dim = hp.max_seq_len
+    logits = dense(attnattn, in_dim, hp.num_classes, act=None, scope="class_log")
+    return logits
 
 def dense(x, in_dim, out_dim, scope, act=None):
   """ Fully connected layer builder"""

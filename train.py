@@ -1,8 +1,10 @@
+# Author: Andre Cianflone
 import tensorflow as tf
 from model import Attn
 import numpy as np
 from sklearn.metrics import accuracy_score
-np.random.seed(seed=1)
+random_seed = 1
+np.random.seed(seed=random_seed)
 
 def make_batches(x, x_len, y, shuffle=True):
   """ Yields the data object with all properties sliced """
@@ -68,7 +70,7 @@ def train_model(params, emb, trX, trXlen, trY, teX, teXlen, teY):
   best_acc = 0
   best_epoch = 0
   with tf.Graph().as_default(), tf.Session() as sess:
-    tf.set_random_seed(1)
+    tf.set_random_seed(random_seed)
     model = Attn(hp, emb)
     tf.global_variables_initializer().run()
     for epoch in range(hp.max_epochs):
