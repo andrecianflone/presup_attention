@@ -4,7 +4,11 @@ from pydoc import locate
 import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer as glorot
 
-class Attn():
+# Global numerical types
+floatX = tf.float32
+intX = tf.int32
+
+class PairWiseAttn():
   """ BiRNN + Pair-wise Attn + Conv """
   def __init__(self,params, embedding):
     """
@@ -17,27 +21,25 @@ class Attn():
     # helper variable to keep track of steps
     self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    self.floatX = tf.float32
-    self.intX = tf.int32
     self.bi_encoder_hidden = hp.cell_units * 2
 
     ############################
     # Inputs
     ############################
-    self.keep_prob = tf.placeholder(self.floatX)
+    self.keep_prob = tf.placeholder(floatX)
     self.mode = tf.placeholder(tf.bool, name="mode") # 1 stands for training
     self.vocab_size = embedding.shape[0]
     # Embedding tensor is of shape [vocab_size x embedding_size]
     self.embedding_tensor = self.embedding_setup(embedding, hp.emb_trainable)
 
     # RNN inputs
-    self.inputs = tf.placeholder(self.intX, shape=[None, hp.max_seq_len])
+    self.inputs = tf.placeholder(intX, shape=[None, hp.max_seq_len])
     self.embedded = self.embedded(self.inputs, self.embedding_tensor)
     # self.embedded = tf.layers.batch_normalization(embedded, training=self.mode)
-    self.input_len = tf.placeholder(self.intX, shape=[None,])
+    self.input_len = tf.placeholder(intX, shape=[None,])
 
     # Targets
-    self.labels = tf.placeholder(self.intX, shape=[None, hp.num_classes])
+    self.labels = tf.placeholder(intX, shape=[None, hp.num_classes])
 
     self.batch_size = tf.shape(self.inputs)[0]
 
@@ -143,6 +145,8 @@ class Attn():
       return embedding
 
   def build_cell(self, cell_type="LSTMCell"):
+    # Cells initialized with scope initializer
+    with tf.variable_scope("Cell", initializer=tf.orthogonal_initializer):
       Cell = locate("tensorflow.contrib.rnn." + cell_type)
       if Cell is None:
         raise ValueError("Invalid cell type " + cell_type)
@@ -168,7 +172,7 @@ class Attn():
              and the backward final states of bidirectional rnlast hidden state
     """
     # Output is the outputs at all time steps, state is the last state
-    with tf.variable_scope("bidirectional_dynamic_rnn"):
+    with tf.variable_scope("biRNN"):
       outputs, state = tf.nn.bidirectional_dynamic_rnn(\
                   cell_fw=cell_fw,
                   cell_bw=cell_bw,
@@ -176,7 +180,7 @@ class Attn():
                   sequence_length=seq_len,
                   initial_state_fw=init_state_fw,
                   initial_state_bw=init_state_bw,
-                  dtype=self.floatX)
+                  dtype=floatX)
       # outputs: a tuple(output_fw, output_bw), all sequence hidden states,
       # each as tensor of shape [batch,time,units]
       # Since we don't need the outputs separate, we concat here
@@ -228,16 +232,30 @@ class Attn():
 
     return y_pred, y_true
 
-class AttnAttn(Attn):
+class AttnAttn(PairWiseAttn):
   """
-  Attn over attn, uses most of the following except final layer:
-  https://arxiv.org/pdf/1607.04423.pdf
+  Attn over attn, based mostly on https://arxiv.org/pdf/1607.04423.pdf,
+  except for final layer which is fully connected to number of classes
   """
-  def __init__(self, params, embedding):
+  def __init__(self, params, embedding, fc_layer=True):
     super().__init__(params, embedding)
 
   # Override logits function
   def get_logits(self, col_attn, row_attn):
+    # Get attn over attn
+    attnattn = self.attn_attn(col_attn, row_attn)
+
+    # FC layer before output
+    in_dim = hp.max_seq_len
+    attnattn = dense(attnattn, in_dim, hp.dense_units, act=tf.nn.relu, scope="h")
+    attnattn = tf.nn.dropout(attnattn, hp.keep_prob)
+
+    # Output layer
+    in_dim=hp.dense_units
+    logits = dense(attnattn, in_dim, hp.num_classes, act=None, scope="class_log")
+    return logits
+
+  def attn_attn(self, col_attn, row_attn):
     """
     Average the softmax matrices
     """
@@ -248,22 +266,80 @@ class AttnAttn(Attn):
     # Attn-over-attn -> a dot product between column average vector and
     # column-wise softmax matrix. Result is a single vector [sequence len]
     attnattn = tf.einsum('ajk,ak->aj',col_attn,col_av)
-    # attnattn = tf.matmul(col_attn, col_av)
-    # attnattn = tf.matmul(col_attn, col_av, transpose_b=True)
+    return attnattn
 
-    # TODO: Do we need to flatten vector?
+class ConvAttn(PairWiseAttn):
+  """
+  Given pair-wise matching score tensors, we convolve over them. Intuition
+  is to detect clusters of local attention
+  """
+  def __init__(self, params, embedding, fc_layer=True):
+    super().__init__(params, embedding)
 
-    in_dim = hp.max_seq_len
-    logits = dense(attnattn, in_dim, hp.num_classes, act=None, scope="class_log")
+  # Override logits function
+  def get_logits(self, col_attn, row_attn):
+    # Convolve
+    self.col_conv = self.convolution(col_attn, scope='col_conv')
+    self.row_conv = self.convolution(row_attn, scope='row_conv')
+
+    # Pool
+    self.col_pool = self.max_pool(self.col_conv, scope='col_pool')
+    self.col_pool = tf.nn.dropout(self.col_pool, hp.keep_prob)
+    self.row_pool = self.max_pool(self.row_conv, scope='row_pool')
+    self.row_pool = tf.nn.dropout(self.row_pool, hp.keep_prob)
+
+    # Flatten and concat the two
+    self.concat = tf.concat([self.col_pool, self.row_pool], 1)
+    in_dim = hp.out_channels*2
+    logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
     return logits
+    # return super().get_logits(col_attn, row_attn)
+
+  def convolution(self, x, scope):
+    """
+    Args:
+      x: a [batch_size, seq_len, seq_len] pair-wise score tensor
+      scope: need a scope name, otherwise variable naming error
+    Returns:
+      activated tensor. If x is shape [32,60,60], kernel has h/w 2, stride 2
+      and output 32, then returns tensor shape [32,29,29,32]
+    """
+    # Expand last dim for convolution operation
+    x = tf.expand_dims(x,-1)
+    with tf.variable_scope(scope):
+      # Kernel of shape [filter_height, filter_width, in_channels, out_channels]
+      k_shape = [hp.filt_height, hp.filt_width, 1, hp.out_channels]
+      kernel = tf.get_variable("c_w", shape=k_shape, dtype=floatX)
+      bias = tf.get_variable("c_b", hp.out_channels, dtype=floatX)
+      conv = tf.nn.conv2d( x, kernel, hp.conv_strides, hp.padding, name="conv")
+      # Activation
+      h = tf.nn.relu(tf.nn.bias_add(conv, bias))
+    return h
+
+  def max_pool(self, x, scope):
+    """
+    If say input is shape [32,29,29,32], pool shape is [1,29,29,1] with stride 1,
+    then output is [32, 32]
+    """
+    with tf.variable_scope(scope):
+      p_shape = [1, 29, 29, 1]
+      stride = [1,1,1,1]
+      pooled = tf.nn.max_pool(
+          x,
+          p_shape,
+          stride,
+          hp.padding,
+          data_format='NHWC')
+      pooled = tf.squeeze(pooled, [1,2]) # squeeze single elem dimensions
+      return pooled
 
 def dense(x, in_dim, out_dim, scope, act=None):
   """ Fully connected layer builder"""
   with tf.variable_scope(scope):
     weights = tf.get_variable("weights", shape=[in_dim, out_dim],
-              dtype=tf.float32, initializer=tf.orthogonal_initializer())
+              dtype=floatX, initializer=tf.orthogonal_initializer())
     biases = tf.get_variable("biases", out_dim,
-              dtype=tf.float32, initializer=tf.constant_initializer(0.0))
+              dtype=floatX, initializer=tf.constant_initializer(0.0))
     # Pre activation
     h = tf.matmul(x,weights) + biases
     # Post activation

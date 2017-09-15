@@ -1,3 +1,4 @@
+# Author: Andre Cianflone
 from datetime import datetime
 
 class Progress():

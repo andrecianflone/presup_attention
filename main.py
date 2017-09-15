@@ -3,7 +3,7 @@ import sys
 import os
 import numpy as np
 from train import train_model
-# Hack, add parent as package to allow relative imports
+# Hack: add parent as package to allow relative imports
 PACKAGE_PARENT = '..'
 SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
 sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
@@ -20,6 +20,7 @@ class HParams():
 
 # TODO: check the embedding and integerization. Why does 'the'
 # refer to index 5273? Should be one of the first
+
 if __name__=="__main__":
   # Get data
   path="../presup_wsj/"
@@ -32,19 +33,33 @@ if __name__=="__main__":
   print('testing: positive: {} negative: {}'.format(\
       np.sum(teY), len(teY)-np.sum(teY)))
 
-  # Hyper params
+  # General hyper params
   hp = HParams(
     emb_trainable = True,
     batch_size    = 32,
     max_seq_len   = 60,
     max_epochs    = 20,
     early_stop    = 10,
-    keep_prob     = 0.5,
+    keep_prob     = 0.3,
+    eval_every    = 10,
     num_classes   = 2,
     l_rate        = 0.001,
     cell_units    = 32,
     cell_type     = 'LSTMCell',
     optimizer     = 'AdamOptimizer'
+  )
+
+  # Hyper params for dense layers
+  hp.update(
+    dense_units = 64
+  )
+  # Hyper params for convnet
+  hp.update(
+    filt_height  = 3,
+    filt_width   = 3,
+    conv_strides = [1,2,2,1], #since input is "NHWC", no batch/channel stride
+    padding      = "VALID",
+    out_channels = 32
   )
 
   train_model(hp, emb, trX, trXlen, trY, teX, teXlen, teY)

@@ -1,6 +1,6 @@
 # Author: Andre Cianflone
 import tensorflow as tf
-from model import Attn, AttnAttn
+from model import PairWiseAttn, AttnAttn, ConvAttn
 from utils import Progress
 import numpy as np
 from sklearn.metrics import accuracy_score
@@ -10,15 +10,14 @@ np.random.seed(seed=random_seed)
 def train_model(params, emb, trX, trXlen, trY, teX, teXlen, teY):
   global hp
   hp = params
-  n_tr_batches = calc_num_batches(trX)
-  prog = Progress(n_tr_batches)
+  prog = Progress(calc_num_batches(trX))
   best_acc = 0
   best_epoch = 0
 
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:
     tf.set_random_seed(random_seed)
-    model = AttnAttn(hp, emb)
+    model = ConvAttn(hp, emb)
     # model = Attn(hp, emb)
     tf.global_variables_initializer().run()
 
@@ -29,9 +28,7 @@ def train_model(params, emb, trX, trXlen, trY, teX, teXlen, teY):
         fetch = [model.optimize, model.cost, model.global_step]
         _, cost, step = call_model(sess, model, batch, fetch, hp.keep_prob, mode=1)
         prog.print_train(cost)
-        # if step%10==0:
-          # print('ep {} step {} - cost {}'.format(epoch, step, cost))
-        if step%20==0:
+        if step%hp.eval_every==0:
           acc = accuracy(sess, teX, teXlen, teY, model)
           if acc>best_acc:
             best_acc = acc
