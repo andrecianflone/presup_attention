@@ -20,31 +20,37 @@ class HParams():
 
 # TODO: check the embedding and integerization. Why does 'the'
 # refer to index 5273? Should be one of the first
+# TODO: add Conv model batch norm before relu
+# TODO: Implement Batch norm mLSTM?
 
 if __name__=="__main__":
   # Get data
-  path="../presup_wsj/"
-  emb, word_idx_map, trX, trXlen, trY, teX, teXlen, teY = load_data(path)
+  path="../presup_giga_also/"
+  # path="../presup_wsj/"
+  emb, word_idx_map, trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY =\
+                                                                load_data(path)
 
   # Data info
   print('size of sets:')
   print('training: positive: {} negative: {}'.format(\
       np.sum(trY), len(trY)-np.sum(trY)))
+  print('validation: positive: {} negative: {}'.format(\
+      np.sum(vaY), len(vaY)-np.sum(vaY)))
   print('testing: positive: {} negative: {}'.format(\
       np.sum(teY), len(teY)-np.sum(teY)))
 
   # General hyper params
   hp = HParams(
-    emb_trainable = True,
-    batch_size    = 32,
+    emb_trainable = False,
+    batch_size    = 64,
     max_seq_len   = 60,
     max_epochs    = 20,
     early_stop    = 10,
-    keep_prob     = 0.3,
-    eval_every    = 10,
+    keep_prob     = 0.5,
+    eval_every    = 300,
     num_classes   = 2,
     l_rate        = 0.001,
-    cell_units    = 32,
+    cell_units    = 512,
     cell_type     = 'LSTMCell',
     optimizer     = 'AdamOptimizer'
   )
@@ -57,9 +63,11 @@ if __name__=="__main__":
   hp.update(
     filt_height  = 3,
     filt_width   = 3,
+    h_layers     = 0,
+    h_units = hp.dense_units,
     conv_strides = [1,2,2,1], #since input is "NHWC", no batch/channel stride
     padding      = "VALID",
     out_channels = 32
   )
 
-  train_model(hp, emb, trX, trXlen, trY, teX, teXlen, teY)
+  train_model(hp, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY)

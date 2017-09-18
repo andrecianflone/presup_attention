@@ -278,7 +278,7 @@ class ConvAttn(PairWiseAttn):
 
   # Override logits function
   def get_logits(self, col_attn, row_attn):
-    # Convolve
+    # Convolve + non-linearity
     self.col_conv = self.convolution(col_attn, scope='col_conv')
     self.row_conv = self.convolution(row_attn, scope='row_conv')
 
@@ -290,7 +290,16 @@ class ConvAttn(PairWiseAttn):
 
     # Flatten and concat the two
     self.concat = tf.concat([self.col_pool, self.row_pool], 1)
+
+    # Hidden layers
     in_dim = hp.out_channels*2
+    for i in range(hp.h_layers):
+      name = "dense{}".format(i)
+      self.concat = dense(self.concat, in_dim, hp.dense_units,act=tf.nn.relu,scope=name)
+      self.concat = tf.nn.dropout(self.concat, hp.keep_prob)
+      in_dim=hp.dense_units
+
+    # Output layer
     logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
     return logits
     # return super().get_logits(col_attn, row_attn)
@@ -312,6 +321,10 @@ class ConvAttn(PairWiseAttn):
       kernel = tf.get_variable("c_w", shape=k_shape, dtype=floatX)
       bias = tf.get_variable("c_b", hp.out_channels, dtype=floatX)
       conv = tf.nn.conv2d( x, kernel, hp.conv_strides, hp.padding, name="conv")
+
+      # Batch-norm
+      # conv = tf.layers.batch_normalization(conv, training=self.mode)
+
       # Activation
       h = tf.nn.relu(tf.nn.bias_add(conv, bias))
     return h

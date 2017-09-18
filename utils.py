@@ -1,5 +1,7 @@
 # Author: Andre Cianflone
 from datetime import datetime
+import numpy as np
+from numpy.random import RandomState
 
 class Progress():
   """ Pretty print progress for neural net training """
@@ -15,6 +17,7 @@ class Progress():
     self.last_train = ''
     self.track_best = track_best
     self.best_val = 0
+    self.test_val = 0
 
   def epoch_start(self):
     print()
@@ -39,17 +42,21 @@ class Progress():
     """ Print anything, append previous """
     print(msg, end='')
 
-  def print_eval(self, msg, value):
+  def test_best_val(self, te_acc):
+    """ Test set result at the best validation checkpoint """
+    self.test_val = te_acc
+
+  def print_eval(self, value):
     # Print last training info
     print(self.last_train, end='')
-    self.last_eval = '| {}: {:>3.4f} '.format(msg, value)
+    self.last_eval = '| val acc: {:>3.4f} '.format(value)
 
     # If tracking eval, update best
     extra = ''
     if self.track_best == True:
       if value > self.best_val:
         self.best_val = value
-      self.last_eval += '| {}: {:>3.4f} '.format('best val', self.best_val)
+      self.last_eval += '| best val: {:>3.4f} | test at best model: {:>3.4f}'.format(self.best_val, self.test_val)
     print(self.last_eval, end='\r')
 
   def print_bar(self):
@@ -66,4 +73,37 @@ def seq_length(sequence):
   length = tf.reduce_sum(used, 1)
   length = tf.cast(length, tf.int32)
   return length
+
+def make_batches(x, x_len, y, batch_size, shuffle=True, seed=0):
+  """ Yields the data object with all properties sliced """
+  y = one_hot(y)
+  data_size = len(x)
+  indices = np.arange(0, data_size)
+  num_batches = data_size//batch_size+(data_size%batch_size>0)
+  if shuffle:
+    rnd = RandomState(seed) # repeatable shuffle
+    rnd.shuffle(indices)
+  for batch_num in range(num_batches):
+    start_index = batch_num * batch_size
+    end_index = min((batch_num + 1) * batch_size, data_size)
+    new_indices = indices[start_index:end_index]
+    yield (x[new_indices], x_len[new_indices], y[new_indices])
+
+def calc_num_batches(x, batch_size):
+  """ Return number of batches for this set """
+  data_size = len(x)
+  num_batches = data_size//batch_size+(data_size%batch_size>0)
+  return num_batches
+
+def one_hot(arr):
+  """ One-hot encode, where values interpreted as index of non-zero column """
+  mat = np.zeros((arr.size, arr.max()+1))
+  mat[np.arange(arr.size),arr] = 1
+  return mat
+
+def decoder_mask():
+  """ Returns tensor of same shape as decoder output to mask padding """
+  ones = np.ones([batch_size,hp.max_seq_len])
+  ones[trXlen[:,None] <= np.arange(trXlen.shape[1])] = 0
+  np.repeat(d[:, :, np.newaxis], 2, axis=2)
 

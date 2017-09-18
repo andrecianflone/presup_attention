@@ -1,66 +1,46 @@
 # Author: Andre Cianflone
 import tensorflow as tf
 from model import PairWiseAttn, AttnAttn, ConvAttn
-from utils import Progress
+from utils import Progress, make_batches, calc_num_batches
 import numpy as np
 from sklearn.metrics import accuracy_score
 random_seed=1
-np.random.seed(seed=random_seed)
+# np.random.seed(seed=random_seed)
 
-def train_model(params, emb, trX, trXlen, trY, teX, teXlen, teY):
+def train_model(params, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX,
+                                                                  teXlen, teY):
   global hp
   hp = params
-  prog = Progress(calc_num_batches(trX))
+  prog = Progress(calc_num_batches(trX, hp.batch_size))
   best_acc = 0
   best_epoch = 0
+  te_acc = 0
 
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:
     tf.set_random_seed(random_seed)
     model = ConvAttn(hp, emb)
-    # model = Attn(hp, emb)
+    # model = PairWiseAttn(hp, emb)
     tf.global_variables_initializer().run()
 
     # Begin training and occasional validation
     for epoch in range(hp.max_epochs):
       prog.epoch_start()
-      for batch in make_batches(trX, trXlen, trY, shuffle=True):
+      for batch in make_batches(trX, trXlen, trY, hp.batch_size,
+                                                    shuffle=True, seed=epoch):
         fetch = [model.optimize, model.cost, model.global_step]
         _, cost, step = call_model(sess, model, batch, fetch, hp.keep_prob, mode=1)
         prog.print_train(cost)
         if step%hp.eval_every==0:
-          acc = accuracy(sess, teX, teXlen, teY, model)
-          if acc>best_acc:
-            best_acc = acc
+          va_acc = accuracy(sess, vaX, vaXlen, vaY, model)
+          if va_acc>best_acc:
+            best_acc = va_acc
             best_epoch = epoch
-          prog.print_eval('val acc',acc)
+            te_acc = accuracy(sess, teX, teXlen, teY, model)
+            prog.test_best_val(te_acc)
+          prog.print_eval(va_acc)
     prog.train_end()
     print('Best epoch {}, acc: {}'.format(best_epoch, best_acc))
-
-def make_batches(x, x_len, y, shuffle=True):
-  """ Yields the data object with all properties sliced """
-  y = one_hot(y)
-  data_size = len(x)
-  indices = np.arange(0, data_size)
-  num_batches = data_size//hp.batch_size+(data_size%hp.batch_size>0)
-  if shuffle: np.random.shuffle(indices)
-  for batch_num in range(num_batches):
-    start_index = batch_num * hp.batch_size
-    end_index = min((batch_num + 1) * hp.batch_size, data_size)
-    new_indices = indices[start_index:end_index]
-    yield (x[new_indices], x_len[new_indices], y[new_indices])
-
-def calc_num_batches(x):
-  """ Return number of batches for this set """
-  data_size = len(x)
-  num_batches = data_size//hp.batch_size+(data_size%hp.batch_size>0)
-  return num_batches
-
-def one_hot(arr):
-  """ One-hot encode, where values interpreted as index of non-zero column """
-  mat = np.zeros((arr.size, arr.max()+1))
-  mat[np.arange(arr.size),arr] = 1
-  return mat
 
 def accuracy(sess, teX, teXlen, teY, model):
   """ Return accuracy """
@@ -68,7 +48,7 @@ def accuracy(sess, teX, teXlen, teY, model):
   y_pred = np.zeros(teX.shape[0])
   y_true = np.zeros(teX.shape[0])
   start_id = 0
-  for batch in make_batches(teX, teXlen, teY, shuffle=False):
+  for batch in make_batches(teX, teXlen, teY, hp.batch_size, shuffle=False):
     result = call_model(sess, model, batch, fetch, hp.keep_prob, mode=0)
     batch_size                           = result[0]
     cost                                 = result[1]
@@ -94,10 +74,4 @@ def call_model(sess, model, batch, fetch, keep_prob, mode):
 
   result = sess.run(fetch,feed)
   return result
-
-def decoder_mask():
-  """ Returns tensor of same shape as decoder output to mask padding """
-  ones = np.ones([batch_size,hp.max_seq_len])
-  ones[trXlen[:,None] <= np.arange(trXlen.shape[1])] = 0
-  np.repeat(d[:, :, np.newaxis], 2, axis=2)
 
