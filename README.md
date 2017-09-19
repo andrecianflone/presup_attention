@@ -1,4 +1,25 @@
 
+## Task
+Given a sample text the model must predict if it contains a presupposition triggering. Pressupositions are triggered by keywords such as "also", "again". The keywords are removed since their position make the task easier.
+
+## Models
+We experiment with 3 models for presupposition triggering.
+
+### 1. PairWiseAttn
+The base model for all others. The input is encoded via an RNN.
+We take all output states for a sample and compute matrix multiplication on itself,
+giving us a pairwise matching score across all input pairs. We then produce two
+matrices, one row softmax and a column softmax.
+
+### 2. Attention-over-Attention
+Building on the base model, we compute a column-wise average over the row-wise softmax matrix, giving us vector `c`. We compute the dot product of vector `c` with the column-wise softmax matrix, giving us a sum-attention vector `att-o-att`.
+This is based on [Cui et al, 2017](https://arxiv.org/pdf/1607.04423.pdf)'s Attention-over-Attention model for cloze-style reading comprehension.
+However, we do not implement the last step where a a word is predicted by summing over `att-o-att` vector. Our final layer is a fully connected layer between `c` and our two classes.
+
+### 3. Convolution-over-Attention
+Given the two normalized pair-wise matching score matrices, we convolve over these.
+The intuition is to locate attention groupings which seems supported by qualitative analysis of our data.
+
 Base settings:
 ```python
   # General hyper params
@@ -56,7 +77,7 @@ Base results: val 78.64, test 78.14, epoch 7
 Model     | param         | value | val   | test  | epoch
 ----------|---------------|-------|-------|
 ConvAttn  | RNN units     | 256   | 79.14 | 78.26 | 4
--ConvAttn  | RNN units     | 512   |       |       |
+-ConvAttn  | RNN units     | 512   |75.12  | 74.54      |
 ConvAttn  | batch_norm    | yes   |       |       |
 ConvAttn  | h_layers      | 1     |       |       |
 ConvAttn  | fine tune emb | no    |       |       |
