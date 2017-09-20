@@ -287,29 +287,28 @@ class ConvAttn(PairWiseAttn):
   def get_logits(self, col_attn, row_attn):
     # Convolve + non-linearity
     self.col_conv = self.convolution(col_attn, scope='col_conv')
-    self.row_conv = self.convolution(row_attn, scope='row_conv')
+    # self.row_conv = self.convolution(row_attn, scope='row_conv')
 
     # Pool
     self.col_pool = self.max_pool(self.col_conv, scope='col_pool')
     self.col_pool = tf.nn.dropout(self.col_pool, hp.keep_prob)
-    self.row_pool = self.max_pool(self.row_conv, scope='row_pool')
-    self.row_pool = tf.nn.dropout(self.row_pool, hp.keep_prob)
+    # self.row_pool = self.max_pool(self.row_conv, scope='row_pool')
+    # self.row_pool = tf.nn.dropout(self.row_pool, hp.keep_prob)
 
     # Flatten and concat the two
-    self.concat = tf.concat([self.col_pool, self.row_pool], 1)
+    self.final = tf.concat([self.col_pool, self.row_pool], 1)
 
     # Optional Hidden layers
     in_dim = hp.out_channels*2
     for i in range(hp.h_layers):
       name = "dense{}".format(i)
-      self.concat = dense(self.concat, in_dim, hp.dense_units,act=tf.nn.relu,scope=name)
-      self.concat = tf.nn.dropout(self.concat, hp.keep_prob)
+      self.final = dense(self.final, in_dim, hp.dense_units,act=tf.nn.relu,scope=name)
+      self.final = tf.nn.dropout(self.final, hp.keep_prob)
       in_dim=hp.dense_units
 
     # Output layer
-    logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
+    logits = dense(self.final, in_dim, hp.num_classes, act=None, scope="class_log")
     return logits
-    # return super().get_logits(col_attn, row_attn)
 
   def convolution(self, x, scope):
     """

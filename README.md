@@ -45,7 +45,7 @@ Base settings:
   )
   # Hyper params for convnet
   hp.update(
-    batch_norm   = True,
+    batch_norm   = False,
     filt_height  = 3,
     filt_width   = 3,
     h_units = self.dense_units,
@@ -57,16 +57,15 @@ Base settings:
 
 ## Results
 
-### Dataset: WSJ
-
+### Dataset: Giga also
 Model    | param     | value  | val   | test  | epoch
 ---------|-----------|--------|-------|-------|---
-AttnAttn | *base*    | *base* | 79.73 | 77.76 | 8
+AttnAttn | *base*    | *base* | 78.73 | 77.76 | 8
 AttnAttn | RNN units | 256    | 78.79 | 78.68 | 3
 AttnAttn | RNN units | 512    | 78.76 | 78.57 | 5
-AttnAttn | h_layers  | 1      | 75.80 | 75.59 | 6
+AttnAttn | h_layers  | 1      | 76.32 | 75.86 | 8
 
-### Dataset: Giga also on test
+### Dataset: Giga also
 Model    | param         | value  | val   | test  | epoch
 ---------|---------------|--------|-------|-------|---
 ConvAttn | *base*        | *base* | 78.64 | 78.14 | 7
