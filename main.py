@@ -57,13 +57,14 @@ if __name__=="__main__":
 
   # Hyper params for dense layers
   hp.update(
+    h_layers     = 1,
     dense_units = 64
   )
   # Hyper params for convnet
   hp.update(
+    batch_norm   = False,
     filt_height  = 3,
     filt_width   = 3,
-    h_layers     = 0,
     h_units = hp.dense_units,
     conv_strides = [1,2,2,1], #since input is "NHWC", no batch/channel stride
     padding      = "VALID",

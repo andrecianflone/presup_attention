@@ -40,13 +40,14 @@ Base settings:
 
   # Hyper params for dense layers
   hp.update(
+    h_layers    = 0,
     dense_units = 64
   )
   # Hyper params for convnet
   hp.update(
+    batch_norm   = True,
     filt_height  = 3,
     filt_width   = 3,
-    h_layers     = 0,
     h_units = self.dense_units,
     conv_strides = [1,2,2,1], #since input is "NHWC", no batch/channel stride
     padding      = "VALID",
@@ -57,29 +58,22 @@ Base settings:
 ## Results
 
 ### Dataset: WSJ
-Model    | param      | value | acc   | epoch
 
-### Dataset: Giga also on val
-Base results: 75.31 on epoch 1
-Model    | param         | value | acc   | epoch
----------|---------------|-------|-------|
-ConvAttn | RNN units     | 256   | 76.01 | 1
-ConvAttn | RNN units     | 512   | 69.51 | 3
-ConvAttn | batch_norm    | yes   | 50.66 | 1
-ConvAttn | h_layers      | 1     | 75.60 | 2
-ConvAttn | fine tune emb | no    | 77.48 | 7
-ConvAttn | fine tune emb | no    | 77.77 | 6
-         | RNN units     | 256   |       |
-
+Model    | param     | value  | val   | test  | epoch
+---------|-----------|--------|-------|
+AttnAttn | *base*    | *base* | 79.73 | 77.76 | 8
+AttnAttn | RNN units | 256    | 78.79 | 78.68 | 3
+AttnAttn | RNN units | 512    | 78.76 | 78.57 | 5
+AttnAttn | h_layers  | 1      | 75.80 | 75.59 | 6
 
 ### Dataset: Giga also on test
-Base results: val 78.64, test 78.14, epoch 7
-Model     | param         | value | val   | test  | epoch
-----------|---------------|-------|-------|
-ConvAttn  | RNN units     | 256   | 79.14 | 78.26 | 4
--ConvAttn  | RNN units     | 512   |75.12  | 74.54      |
-ConvAttn  | batch_norm    | yes   |       |       |
-ConvAttn  | h_layers      | 1     |       |       |
-ConvAttn  | fine tune emb | no    |       |       |
+Model    | param         | value  | val   | test  | epoch
+---------|---------------|--------|-------|
+ConvAttn | *base*        | *base* | 78.64 | 78.14 | 7
+ConvAttn | RNN units     | 256    | 79.14 | 78.26 | 4
+ConvAttn | RNN units     | 512    | 75.12 | 74.27 |
+ConvAttn | batch_norm    | yes    | 49.97 | 49.95 | 1
+ConvAttn | h_layers      | 1      | 78.30 | 77.72 | 8
+ConvAttn | fine tune emb | yes    | 79.12 | 73.19 |
 
 

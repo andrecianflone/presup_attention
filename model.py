@@ -250,8 +250,15 @@ class AttnAttn(PairWiseAttn):
     attnattn = dense(attnattn, in_dim, hp.dense_units, act=tf.nn.relu, scope="h")
     attnattn = tf.nn.dropout(attnattn, hp.keep_prob)
 
-    # Output layer
     in_dim=hp.dense_units
+    # Optional fc layer
+    for i in range(hp.h_layers):
+      name = "dense{}".format(i)
+      attnattn = dense(attnattn, in_dim, hp.dense_units,act=tf.nn.relu,scope=name)
+      attnattn = tf.nn.dropout(attnattn, hp.keep_prob)
+      in_dim=hp.dense_units
+
+    # Output layer
     logits = dense(attnattn, in_dim, hp.num_classes, act=None, scope="class_log")
     return logits
 
@@ -291,7 +298,7 @@ class ConvAttn(PairWiseAttn):
     # Flatten and concat the two
     self.concat = tf.concat([self.col_pool, self.row_pool], 1)
 
-    # Hidden layers
+    # Optional Hidden layers
     in_dim = hp.out_channels*2
     for i in range(hp.h_layers):
       name = "dense{}".format(i)
@@ -323,7 +330,8 @@ class ConvAttn(PairWiseAttn):
       conv = tf.nn.conv2d( x, kernel, hp.conv_strides, hp.padding, name="conv")
 
       # Batch-norm
-      # conv = tf.layers.batch_normalization(conv, training=self.mode)
+      if hp.batch_norm == True:
+        conv = tf.layers.batch_normalization(conv, training=self.mode)
 
       # Activation
       h = tf.nn.relu(tf.nn.bias_add(conv, bias))
