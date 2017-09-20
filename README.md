@@ -60,7 +60,7 @@ Base settings:
 ### Dataset: WSJ
 
 Model    | param     | value  | val   | test  | epoch
----------|-----------|--------|-------|
+---------|-----------|--------|-------|-------|
 AttnAttn | *base*    | *base* | 79.73 | 77.76 | 8
 AttnAttn | RNN units | 256    | 78.79 | 78.68 | 3
 AttnAttn | RNN units | 512    | 78.76 | 78.57 | 5
@@ -68,7 +68,7 @@ AttnAttn | h_layers  | 1      | 75.80 | 75.59 | 6
 
 ### Dataset: Giga also on test
 Model    | param         | value  | val   | test  | epoch
----------|---------------|--------|-------|
+---------|---------------|--------|-------|-------|
 ConvAttn | *base*        | *base* | 78.64 | 78.14 | 7
 ConvAttn | RNN units     | 256    | 79.14 | 78.26 | 4
 ConvAttn | RNN units     | 512    | 75.12 | 74.27 |
