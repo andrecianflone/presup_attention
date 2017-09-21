@@ -151,7 +151,13 @@ class PairWiseAttn():
       if Cell is None:
         raise ValueError("Invalid cell type " + cell_type)
       cell_fw = Cell(hp.cell_units)
+      cell_fw = tf.contrib.rnn.DropoutWrapper(\
+          cell_fw, input_keep_prob=hp.rnn_in_keep_prob,
+          variational_recurrent=hp.variational_recurrent)
       cell_bw = Cell(hp.cell_units)
+      cell_bw = tf.contrib.rnn.DropoutWrapper(\
+          cell_bw, input_keep_prob=hp.rnn_in_keep_prob,
+          variational_recurrent=hp.variational_recurrent)
 
       return cell_fw, cell_bw
 

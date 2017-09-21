@@ -24,18 +24,20 @@ Base settings:
 ```python
   # General hyper params
   hp = HParams(
-    emb_trainable = False,
-    batch_size    = 64,
-    max_seq_len   = 60,
-    max_epochs    = 20,
-    early_stop    = 10,
-    keep_prob     = 0.5,
-    eval_every    = 300,
-    num_classes   = 2,
-    l_rate        = 0.001,
-    cell_units    = 128,
-    cell_type     = 'LSTMCell',
-    optimizer     = 'AdamOptimizer'
+    emb_trainable         = False,
+    batch_size            = 64,
+    max_seq_len           = 60,
+    max_epochs            = 20,
+    early_stop            = 10,
+    rnn_in_keep_prob      = 1.0,
+    variational_recurrent = False, # if true, same rnn drop mask at each step
+    keep_prob             = 0.5,
+    eval_every            = 300,
+    num_classes           = 2,
+    l_rate                = 0.001,
+    cell_units            = 512,
+    cell_type             = 'LSTMCell',
+    optimizer             = 'AdamOptimizer'
   )
 
   # Hyper params for dense layers
@@ -64,6 +66,7 @@ AttnAttn | *base*    | *base* | 78.73 | 77.76 | 8
 AttnAttn | RNN units | 256    | 78.79 | 78.68 | 3
 AttnAttn | RNN units | 512    | 78.76 | 78.57 | 5
 AttnAttn | h_layers  | 1      | 76.32 | 75.86 | 8
+AttnAttn | input drop |       | | |
 
 ### Dataset: Giga also
 Model    | param         | value  | val   | test  | epoch

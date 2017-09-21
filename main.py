@@ -41,23 +41,25 @@ if __name__=="__main__":
 
   # General hyper params
   hp = HParams(
-    emb_trainable = False,
-    batch_size    = 64,
-    max_seq_len   = 60,
-    max_epochs    = 20,
-    early_stop    = 10,
-    keep_prob     = 0.5,
-    eval_every    = 300,
-    num_classes   = 2,
-    l_rate        = 0.001,
-    cell_units    = 512,
-    cell_type     = 'LSTMCell',
-    optimizer     = 'AdamOptimizer'
+    emb_trainable         = False,
+    batch_size            = 64,
+    max_seq_len           = 60,
+    max_epochs            = 20,
+    early_stop            = 10,
+    rnn_in_keep_prob      = 1.0,
+    variational_recurrent = False, # if true, same rnn drop mask at each step
+    keep_prob             = 0.5,
+    eval_every            = 300,
+    num_classes           = 2,
+    l_rate                = 0.001,
+    cell_units            = 512,
+    cell_type             = 'LSTMCell',
+    optimizer             = 'AdamOptimizer'
   )
 
   # Hyper params for dense layers
   hp.update(
-    h_layers     = 1,
+    h_layers     = 0,
     dense_units = 64
   )
   # Hyper params for convnet
