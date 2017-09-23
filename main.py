@@ -44,10 +44,10 @@ if __name__=="__main__":
     emb_trainable         = False,
     batch_size            = 64,
     max_seq_len           = 60,
-    max_epochs            = 50,
+    max_epochs            = 150,
     early_stop            = 10,
-    rnn_in_keep_prob      = 0.3, # prob of keeping embedding units
-    variational_recurrent = False, # if true, same rnn drop mask at each step
+    rnn_in_keep_prob      = 0.5, # prob of keeping embedding units
+    variational_recurrent = True, # if true, same rnn drop mask at each step
     keep_prob             = 0.5,
     eval_every            = 300,
     num_classes           = 2,

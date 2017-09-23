@@ -28,7 +28,7 @@ class PairWiseAttn():
     ############################
     self.keep_prob = tf.placeholder(floatX)
     self.mode = tf.placeholder(tf.bool, name="mode") # 1 stands for training
-    self.vocab_size = embedding.shape[0]
+    self.vocab_size, self.emb_size = embedding.shape
     # Embedding tensor is of shape [vocab_size x embedding_size]
     self.embedding_tensor = self.embedding_setup(embedding, hp.emb_trainable)
 
@@ -150,16 +150,20 @@ class PairWiseAttn():
       Cell = locate("tensorflow.contrib.rnn." + cell_type)
       if Cell is None:
         raise ValueError("Invalid cell type " + cell_type)
-      cell_fw = Cell(hp.cell_units)
-      cell_fw = tf.contrib.rnn.DropoutWrapper(\
-          cell_fw, input_keep_prob=hp.rnn_in_keep_prob,
-          variational_recurrent=hp.variational_recurrent)
-      cell_bw = Cell(hp.cell_units)
-      cell_bw = tf.contrib.rnn.DropoutWrapper(\
-          cell_bw, input_keep_prob=hp.rnn_in_keep_prob,
-          variational_recurrent=hp.variational_recurrent)
+      cell_fw = self.drop_wrap(Cell(hp.cell_units))
+      cell_bw = self.drop_wrap(Cell(hp.cell_units))
 
       return cell_fw, cell_bw
+
+  def drop_wrap(self, cell):
+    """ adds dropout to a recurrent cell """
+    cell = tf.contrib.rnn.DropoutWrapper(\
+          cell                  = cell,
+          input_keep_prob       = hp.rnn_in_keep_prob,
+          variational_recurrent = hp.variational_recurrent,
+          dtype                 = floatX,
+          input_size            = self.emb_size)
+    return cell
 
   def encoder_bi(self, cell_fw, cell_bw, x, seq_len, init_state_fw=None,
                   init_state_bw=None):
