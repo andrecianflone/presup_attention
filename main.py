@@ -2,6 +2,7 @@
 import sys
 import os
 import numpy as np
+import argparse
 from train import train_model
 # Hack: add parent as package to allow relative imports
 PACKAGE_PARENT = '..'
@@ -20,10 +21,54 @@ class HParams():
 
 # TODO: check the embedding and integerization. Why does 'the'
 # refer to index 5273? Should be one of the first
-# TODO: add Conv model batch norm before relu
 # TODO: Implement Batch norm mLSTM?
 
 if __name__=="__main__":
+  parser = argparse.ArgumentParser(description='Process some integers.')
+  parser.add_argument('--integers', metavar='N', type=int, nargs='+',
+                      help='an integer for the accumulator')
+  parser.add_argument('--sum', dest='accumulate', action='store_const',
+                      const=sum, default=max,
+                      help='sum the integers (default: find the max)')
+
+
+  parser.add_argument('--emb_trainable',
+  batch_size            = 64,
+  max_seq_len           = 60,
+  max_epochs            = 20,
+  early_stop            = 10,
+  rnn_in_keep_prob      = 1.0,
+  variational_recurrent = False, # if true, same rnn drop mask at each step
+  keep_prob             = 0.5,
+  eval_every            = 300,
+  num_classes           = 2,
+  l_rate                = 0.001,
+  cell_units            = 512,
+  cell_type             = 'LSTMCell',
+  optimizer             = 'AdamOptimizer'
+
+  # Hyper params for dense layers
+  hp.update(
+    h_layers     = 0,
+    dense_units = 64
+  )
+  # Hyper params for convnet
+  hp.update(
+    batch_norm   = False,
+    filt_height  = 3,
+    filt_width   = 3,
+    h_units = hp.dense_units,
+    conv_strides = [1,2,2,1], #since input is "NHWC", no batch/channel stride
+    padding      = "VALID",
+    out_channels = 32
+
+
+
+
+
+
+
+  args = parser.parse_args()
   # Get data
   path="../presup_giga_also/"
   # path="../presup_wsj/"
