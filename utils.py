@@ -1,6 +1,7 @@
 # Author: Andre Cianflone
 from datetime import datetime
 import numpy as np
+import argparse
 from numpy.random import RandomState
 
 class Progress():
@@ -107,3 +108,51 @@ def decoder_mask():
   ones[trXlen[:,None] <= np.arange(trXlen.shape[1])] = 0
   np.repeat(d[:, :, np.newaxis], 2, axis=2)
 
+
+class HParams():
+  def __init__(self):
+    p = argparse.ArgumentParser(description='Presupposition attention')
+
+    # General flags
+    p.add_argument('--data_dir', type=str, default="../presup_giga_also/")
+
+    # Hyperparams
+    p.add_argument('--emb_trainable', type=bool, default=False)
+    p.add_argument('--batch_size', type=int, default=64)
+    p.add_argument('--max_seq_len', type=int, default=60)
+    p.add_argument('--max_epochs', type=int, default= 20)
+    p.add_argument('--early_stop', type=int, default= 10)
+    p.add_argument('--rnn_in_keep_prob', type=float, default=1.0)
+    # Variational recurrent: if true, same rnn drop mask at each step
+    p.add_argument('--variational_recurrent',type=bool, default = False)
+    p.add_argument('--keep_prob', type=float, default=0.5)
+    p.add_argument('--eval_every', type=int, default=300)
+    p.add_argument('--num_classes', type=int, default=2)
+    p.add_argument('--l_rate', type=float, default= 0.001)
+    p.add_argument('--cell_units', type=int, default=512)
+    p.add_argument('--cell_type', type=str, default='LSTMCell')
+    p.add_argument('--optimizer', type=str, default='AdamOptimizer')
+
+    # Hyper params for dense layers
+    p.add_argument('--h_layers', type=int, default=0)
+    p.add_argument('--fc_units', type=int, default=64)
+
+    # Hyper params for convnet
+    p.add_argument('--batch_norm', type=bool, default=False)
+    p.add_argument('--filt_height', type=int, default=3)
+    p.add_argument('--filt_width', type=int, default=3)
+    # For conv_stride: since input is "NHWC", no batch/channel stride
+    p.add_argument('--conv_strides', nargs=4, default=[1,2,2,1])
+    p.add_argument('--padding', type=str, default="VALID")
+    p.add_argument('--out_channels', type=int, default=32)
+
+    args = p.parse_args()
+    self._init_attributes(args)
+
+  def _init_attributes(self, args):
+    for k,v in vars(args).items():
+      setattr(self, k, v)
+
+  def update(self, **kwargs):
+    for k, v in kwargs.items():
+      setattr(self, k, v)

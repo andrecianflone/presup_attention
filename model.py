@@ -257,16 +257,16 @@ class AttnAttn(PairWiseAttn):
 
     # FC layer before output
     in_dim = hp.max_seq_len
-    attnattn = dense(attnattn, in_dim, hp.dense_units, act=tf.nn.relu, scope="h")
+    attnattn = dense(attnattn, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
     attnattn = tf.nn.dropout(attnattn, hp.keep_prob)
 
-    in_dim=hp.dense_units
+    in_dim=hp.fc_units
     # Optional fc layer
     for i in range(hp.h_layers):
       name = "dense{}".format(i)
-      attnattn = dense(attnattn, in_dim, hp.dense_units,act=tf.nn.relu,scope=name)
+      attnattn = dense(attnattn, in_dim, hp.fc_units,act=tf.nn.relu,scope=name)
       attnattn = tf.nn.dropout(attnattn, hp.keep_prob)
-      in_dim=hp.dense_units
+      in_dim=hp.fc_units
 
     # Output layer
     logits = dense(attnattn, in_dim, hp.num_classes, act=None, scope="class_log")
@@ -312,9 +312,9 @@ class ConvAttn(PairWiseAttn):
     in_dim = hp.out_channels*2
     for i in range(hp.h_layers):
       name = "dense{}".format(i)
-      self.final = dense(self.final, in_dim, hp.dense_units,act=tf.nn.relu,scope=name)
+      self.final = dense(self.final, in_dim, hp.fc_units,act=tf.nn.relu,scope=name)
       self.final = tf.nn.dropout(self.final, hp.keep_prob)
-      in_dim=hp.dense_units
+      in_dim=hp.fc_units
 
     # Output layer
     logits = dense(self.final, in_dim, hp.num_classes, act=None, scope="class_log")
