@@ -27,7 +27,7 @@ Base settings:
     emb_trainable         = False,
     batch_size            = 64,
     max_seq_len           = 60,
-    max_epochs            = 20,
+    max_epochs            = 150,
     early_stop            = 10,
     rnn_in_keep_prob      = 1.0,
     variational_recurrent = False, # if true, same rnn drop mask at each step
@@ -60,13 +60,23 @@ Base settings:
 ## Results
 
 ### Dataset: Giga also
-Model    | param     | value  | val   | test  | epoch
----------|-----------|--------|-------|-------|---
-AttnAttn | *base*    | *base* | 78.73 | 77.76 | 8
-AttnAttn | RNN units | 256    | 78.79 | 78.68 | 3
-AttnAttn | RNN units | 512    | 78.76 | 78.57 | 5
-AttnAttn | h_layers  | 1      | 76.32 | 75.86 | 8
-AttnAttn | input drop |       | | |
+Single param variation
+Model     | param           | value  | val   | test  | epoch
+----------|-----------------|--------|-------|-------|
+AttnAttn  | *base*          | *base* | 78.73 | 77.76 | 8
+AttnAttn  | RNN units       | 256    | 78.79 | 78.68 | 3
+AttnAttn  | RNN units       | 512    | 78.76 | 78.57 | 5
+AttnAttn  | h_layers        | 1      | 76.32 | 75.86 | 8
+AttnAttn  | input keep rate | 0.5    | 78.28 | 77.87 | 15
+
+Multi param
+Model      | param           | value | val   | test  | epoch
+-----------|-----------------|-------|-------|-------|
+AttnAttn   | input keep rate | 0.5   | 78.88 | 78.28 | 22
+           | var recurrent   | True  |       |       |
+AttnAttn   | input keep rate | 0.5   | 78.79 | 78.08 |
+           | var recurrent   | True  |       |       |
+           | RNN units       | 256   |       |       |
 
 ### Dataset: Giga also
 Model    | param         | value  | val   | test  | epoch

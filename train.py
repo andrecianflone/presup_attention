@@ -19,7 +19,8 @@ def train_model(params, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX,
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:
     tf.set_random_seed(random_seed)
-    model = AttnAttn(hp, emb)
+    # model = AttnAttn(hp, emb)
+    model = ConvAttn(hp, emb)
     # model = PairWiseAttn(hp, emb)
     tf.global_variables_initializer().run()
 
@@ -39,6 +40,8 @@ def train_model(params, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX,
             te_acc = accuracy(sess, teX, teXlen, teY, model)
             prog.test_best_val(te_acc)
           prog.print_eval(va_acc)
+      # Early stop check
+      if epoch - best_epoch > hp.early_stop: break
     prog.train_end()
     print('Best epoch {}, acc: {}'.format(best_epoch, best_acc))
 
