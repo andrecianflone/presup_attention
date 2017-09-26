@@ -60,16 +60,23 @@ Base settings:
 ## Results
 
 ### Dataset: Giga also
-Model    | param      | value  | val   | test  | epoch
----------|------------|--------|-------|-------|
-AttnAttn | *base*     | *base* | 78.73 | 77.76 | 8
-AttnAttn | RNN units  | 256    | 78.79 | 78.68 | 3
-AttnAttn | RNN units  | 512    | 78.76 | 78.57 | 5
-AttnAttn | h_layers   | 1      | 76.32 | 75.86 | 8
-AttnAttn | input keep rate | 0.5    | 78.28 | 77.87 | 15
+Single param variation
+Model     | param           | value  | val   | test  | epoch
+----------|-----------------|--------|-------|-------|
+AttnAttn  | *base*          | *base* | 78.73 | 77.76 | 8
+AttnAttn  | RNN units       | 256    | 78.79 | 78.68 | 3
+AttnAttn  | RNN units       | 512    | 78.76 | 78.57 | 5
+AttnAttn  | h_layers        | 1      | 76.32 | 75.86 | 8
+AttnAttn  | input keep rate | 0.5    | 78.28 | 77.87 | 15
 
-AttnAttn | input keep rate | 0.5    | | |
-         | var recurrent | True    |  | |
+Multi param
+Model      | param           | value | val   | test  | epoch
+-----------|-----------------|-------|-------|-------|
+AttnAttn   | input keep rate | 0.5   | 78.88 | 78.28 | 22
+           | var recurrent   | True  |       |       |
+AttnAttn   | input keep rate | 0.5   | 78.79 | 78.08 |
+           | var recurrent   | True  |       |       |
+           | RNN units       | 256   |       |       |
 
 ### Dataset: Giga also
 Model    | param         | value  | val   | test  | epoch

@@ -32,7 +32,7 @@ class Progress():
     t2 = datetime.now()
     epoch_time = (t2 - self.t1).total_seconds()
     total_time = (t2 - self.train_start_time).total_seconds()/60
-    self.last_train='{:2.0f}: sec: {:>5.1f} | total min: {:>5.1f} | train loss: {:>3.4f} '.format(
+    self.last_train='{:2.0f}: sec: {:>5.0f} | total min: {:>5.1f} | train loss: {:>3.4f} '.format(
         self.epoch, epoch_time, total_time, loss)
     print(self.last_train, end='')
     self.print_bar()
@@ -49,14 +49,14 @@ class Progress():
   def print_eval(self, value):
     # Print last training info
     print(self.last_train, end='')
-    self.last_eval = '| val acc: {:>3.4f} '.format(value)
+    self.last_eval = '| last val: {:>3.4f} '.format(value)
 
     # If tracking eval, update best
     extra = ''
     if self.track_best == True:
       if value > self.best_val:
         self.best_val = value
-      self.last_eval += '| best val: {:>3.4f} | test at best model: {:>3.4f}'.format(self.best_val, self.test_val)
+      self.last_eval += '| best val: {:>3.4f} | test on best model: {:>3.4f}'.format(self.best_val, self.test_val)
     print(self.last_eval, end='\r')
 
   def print_bar(self):

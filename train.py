@@ -19,7 +19,8 @@ def train_model(params, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX,
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:
     tf.set_random_seed(random_seed)
-    model = AttnAttn(hp, emb)
+    # model = AttnAttn(hp, emb)
+    model = ConvAttn(hp, emb)
     # model = PairWiseAttn(hp, emb)
     tf.global_variables_initializer().run()
 
