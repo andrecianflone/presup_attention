@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score
 random_seed=1
 # np.random.seed(seed=random_seed)
 
-def train_model(params, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX,
+def train_model(params, model, trX, trXlen, trY, vaX, vaXlen, vaY, teX,
                                                                   teXlen, teY):
   global hp
   hp = params
@@ -19,9 +19,6 @@ def train_model(params, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX,
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:
     tf.set_random_seed(random_seed)
-    # model = AttnAttn(hp, emb)
-    model = ConvAttn(hp, emb)
-    # model = PairWiseAttn(hp, emb)
     tf.global_variables_initializer().run()
 
     # Begin training and occasional validation

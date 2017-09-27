@@ -115,6 +115,7 @@ class HParams():
 
     # General flags
     p.add_argument('--data_dir', type=str, default="../presup_giga_also/")
+    p.add_argument('--model', type=str, default="AttnAttn")
 
     # Hyperparams
     p.add_argument('--emb_trainable', type=bool, default=False)
@@ -132,6 +133,7 @@ class HParams():
     p.add_argument('--cell_units', type=int, default=512)
     p.add_argument('--cell_type', type=str, default='LSTMCell')
     p.add_argument('--optimizer', type=str, default='AdamOptimizer')
+    p.add_argument('--model',type=str,default='AttnAttn')
 
     # Hyper params for dense layers
     p.add_argument('--h_layers', type=int, default=0)
