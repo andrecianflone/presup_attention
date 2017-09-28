@@ -21,40 +21,31 @@ Given the two normalized pair-wise matching score matrices, we convolve over the
 The intuition is to locate attention groupings which seems supported by qualitative analysis of our data.
 
 Base settings:
-```python
-  # General hyper params
-  hp = HParams(
-    emb_trainable         = False,
-    batch_size            = 64,
-    max_seq_len           = 60,
-    max_epochs            = 150,
-    early_stop            = 10,
-    rnn_in_keep_prob      = 1.0,
-    variational_recurrent = False, # if true, same rnn drop mask at each step
-    keep_prob             = 0.5,
-    eval_every            = 300,
-    num_classes           = 2,
-    l_rate                = 0.001,
-    cell_units            = 128,
-    cell_type             = 'LSTMCell',
-    optimizer             = 'AdamOptimizer'
-  )
-
-  # Hyper params for dense layers
-  hp.update(
-    h_layers    = 0,
-    dense_units = 64
-  )
-  # Hyper params for convnet
-  hp.update(
-    batch_norm   = False,
-    filt_height  = 3,
-    filt_width   = 3,
-    h_units = self.dense_units,
-    conv_strides = [1,2,2,1], #since input is "NHWC", no batch/channel stride
-    padding      = "VALID",
-    out_channels = 32
-  )
+```shell
+'batch_norm'            : False,
+'batch_size'            : 64,
+'cell_type'             : 'LSTMCell',
+'cell_units'            : 128,
+'conv_strides'          : [1, 2, 2, 1],
+'data_dir'              : '../presup_giga_also/',
+'early_stop'            : 10,
+'emb_trainable'         : False,
+'eval_every'            : 300,
+'fc_units'              : 64,
+'filt_height'           : 3,
+'filt_width'            : 3,
+'h_layers'              : 0,
+'keep_prob'             : 0.5,
+'l_rate'                : 0.001,
+'max_epochs'            : 20,
+'max_seq_len'           : 60,
+'model'                 : 'AttnAttn',
+'num_classes'           : 2,
+'optimizer'             : 'AdamOptimizer',
+'out_channels'          : 32,
+'padding'               : 'VALID',
+'rnn_in_keep_prob'      : 1.0,
+'variational_recurrent' : False
 ```
 
 ## Results

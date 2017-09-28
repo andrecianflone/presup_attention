@@ -3,8 +3,11 @@ from datetime import datetime
 from pprint import pformat
 from pprint import pprint
 import numpy as np
+import os
 import argparse
+import  tarfile
 from numpy.random import RandomState
+import pickle
 
 class Progress():
   """ Pretty print progress for neural net training """
@@ -161,4 +164,38 @@ class HParams():
       setattr(self, k, v)
 
   def __str__(self):
-    return pformat(vars(self),indent=4)
+    return pformat(vars(self),indent=0)
+
+def save_model(sess, saver, hp, result, directory, name, if_global_best=1):
+  """
+  Args:
+    saver: tf saver object
+    hp: HParams object used to created the net
+    va_acc: validation accuracy
+    directory: where to save
+    name: name
+    if_global_best: if true, overwrites best model in directory if better
+  """
+  if not os.path.exists(directory):
+    os.makedirs(directory)
+  path = directory + "/" + name
+  hp_path = path+"_hp.pkl"
+  result_path = path+"_result.pkl"
+
+  # Save temporarily to disk
+  pickle.dump(hp, open(hp_path, "wb"))
+  pickle.dump(result, open(result_path, "wb"))
+  model_path = saver.save(sess, path+"_model.ckpt")
+
+  # Tar the data
+  tar = tarfile.open(path+".tar", "w")
+  tar.add(hp_path)
+  tar.add(result_path)
+  tar.add(model_path)
+  tar.close()
+  # tar = tarfile.open("test.tar")
+  # tar.getmembers()
+
+
+
+

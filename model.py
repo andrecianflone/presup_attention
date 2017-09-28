@@ -2,7 +2,6 @@
 import numpy as np
 from pydoc import locate
 import tensorflow as tf
-from tensorflow.contrib.layers import xavier_initializer as glorot
 
 # Global numerical types
 floatX = tf.float32
@@ -54,6 +53,9 @@ class PairWiseAttn():
     self.encoded_outputs, self.encoded_state = self.encoder_bi(cell_fw,
                                 cell_bw, self.embedded, self.input_len)
 
+    # Word gate
+    # self.encoded_outputs = self.word_gate(self.embedded, self.input_len, self.encoded_outputs)
+
     # Pair-wise score
     self.p_w = self.pair_wise_matching(self.encoded_outputs)
 
@@ -94,6 +96,23 @@ class PairWiseAttn():
     flat_row = tf.reshape(row_attn, [-1, flat_row_dim])
     concat = tf.concat([flat_col, flat_row], 1)
     return concat
+
+  def word_gate(self, embedded, input_len, encoded_outputs):
+    """
+    To increase sparsity in the attention layer, jointly learn to drop words
+    that never contribute to presup triggering, such as stop words?
+    """
+    # Reshape to rank 2 tensor so timestep is no longer a dimension
+    embedded = tf.reshape(embedded, [-1, self.emb_size])
+    encoded_outputs  = tf.reshape(encoded_outputs, [-1, hp.cell_units])
+
+    # Word gate
+    gate = dense(embedded, self.emb_size, hp.cell_units, act=tf.nn.sigmoid)
+    gated = tf.multiply(gate, encoded_outputs)
+
+    # Reshape back to the original tensor shape
+    gated = tf.reshape(gated, [-1, max_seq_len, vocab_size])
+    return gated
 
   def pair_wise_matching(self, rnn_h):
     """

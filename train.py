@@ -1,7 +1,7 @@
 # Author: Andre Cianflone
 import tensorflow as tf
 from model import PairWiseAttn, AttnAttn, ConvAttn
-from utils import Progress, make_batches, calc_num_batches
+from utils import Progress, make_batches, calc_num_batches, save_model
 import numpy as np
 from pydoc import locate
 from sklearn.metrics import accuracy_score
@@ -26,6 +26,9 @@ def train_model(params, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, te
     model = model(hp, emb)
     tf.global_variables_initializer().run()
 
+    # Saver
+    saver = tf.train.Saver()
+
     # Begin training and occasional validation
     for epoch in range(hp.max_epochs):
       prog.epoch_start()
@@ -37,10 +40,12 @@ def train_model(params, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, te
         prog.print_train(cost)
         if step%hp.eval_every==0:
           va_acc = accuracy(sess, vaX, vaXlen, vaY, model)
+          # If best!
           if va_acc>best_acc:
             best_acc = va_acc
             best_epoch = epoch
             te_acc = accuracy(sess, teX, teXlen, teY, model)
+            save_model(saver, hp, va_acc, 'ckpt', if_global_best=1)
             prog.test_best_val(te_acc)
           prog.print_eval(va_acc)
       # Early stop check
