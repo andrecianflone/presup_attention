@@ -4,7 +4,6 @@ import os
 import numpy as np
 from train import train_model
 from utils import HParams
-from pydoc import locate
 # Ugly hack: add parent as package to allow relative imports
 PACKAGE_PARENT = '..'
 SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
@@ -20,6 +19,8 @@ if __name__=="__main__":
 
   # Get hyperparams from argparse and defaults
   hp = HParams()
+  print(hp)
+
   # Get data
   emb, word_idx_map, trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY =\
                                                         load_data(hp.data_dir)
@@ -33,8 +34,5 @@ if __name__=="__main__":
   print('testing: positive: {} negative: {}'.format(\
       np.sum(teY), len(teY)-np.sum(teY)))
 
-  model = locate("model." + hp.model)
-  model = model(hp, emb)
-
   # Train the model!
-  train_model(hp, model, trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY)
+  train_model(hp, emb, trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY)

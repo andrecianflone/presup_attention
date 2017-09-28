@@ -35,7 +35,7 @@ Base settings:
     eval_every            = 300,
     num_classes           = 2,
     l_rate                = 0.001,
-    cell_units            = 512,
+    cell_units            = 128,
     cell_type             = 'LSTMCell',
     optimizer             = 'AdamOptimizer'
   )

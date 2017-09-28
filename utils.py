@@ -1,5 +1,7 @@
 # Author: Andre Cianflone
 from datetime import datetime
+from pprint import pformat
+from pprint import pprint
 import numpy as np
 import argparse
 from numpy.random import RandomState
@@ -130,10 +132,9 @@ class HParams():
     p.add_argument('--eval_every', type=int, default=300)
     p.add_argument('--num_classes', type=int, default=2)
     p.add_argument('--l_rate', type=float, default= 0.001)
-    p.add_argument('--cell_units', type=int, default=512)
+    p.add_argument('--cell_units', type=int, default=128)
     p.add_argument('--cell_type', type=str, default='LSTMCell')
     p.add_argument('--optimizer', type=str, default='AdamOptimizer')
-    p.add_argument('--model',type=str,default='AttnAttn')
 
     # Hyper params for dense layers
     p.add_argument('--h_layers', type=int, default=0)
@@ -158,3 +159,6 @@ class HParams():
   def update(self, **kwargs):
     for k, v in kwargs.items():
       setattr(self, k, v)
+
+  def __str__(self):
+    return pformat(vars(self),indent=4)

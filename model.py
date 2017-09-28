@@ -27,6 +27,7 @@ class PairWiseAttn():
     # Inputs
     ############################
     self.keep_prob = tf.placeholder(floatX)
+    self.rnn_in_keep_prob  = tf.placeholder(floatX)
     self.mode = tf.placeholder(tf.bool, name="mode") # 1 stands for training
     self.vocab_size, self.emb_size = embedding.shape
     # Embedding tensor is of shape [vocab_size x embedding_size]
@@ -159,7 +160,7 @@ class PairWiseAttn():
     """ adds dropout to a recurrent cell """
     cell = tf.contrib.rnn.DropoutWrapper(\
           cell                  = cell,
-          input_keep_prob       = hp.rnn_in_keep_prob,
+          input_keep_prob       = self.rnn_in_keep_prob,
           variational_recurrent = hp.variational_recurrent,
           dtype                 = floatX,
           input_size            = self.emb_size)
@@ -258,14 +259,14 @@ class AttnAttn(PairWiseAttn):
     # FC layer before output
     in_dim = hp.max_seq_len
     attnattn = dense(attnattn, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
-    attnattn = tf.nn.dropout(attnattn, hp.keep_prob)
+    attnattn = tf.nn.dropout(attnattn, self.keep_prob)
 
     in_dim=hp.fc_units
     # Optional fc layer
     for i in range(hp.h_layers):
       name = "dense{}".format(i)
       attnattn = dense(attnattn, in_dim, hp.fc_units,act=tf.nn.relu,scope=name)
-      attnattn = tf.nn.dropout(attnattn, hp.keep_prob)
+      attnattn = tf.nn.dropout(attnattn, self.keep_prob)
       in_dim=hp.fc_units
 
     # Output layer
@@ -301,9 +302,9 @@ class ConvAttn(PairWiseAttn):
 
     # Pool
     self.col_pool = self.max_pool(self.col_conv, scope='col_pool')
-    self.col_pool = tf.nn.dropout(self.col_pool, hp.keep_prob)
+    self.col_pool = tf.nn.dropout(self.col_pool, self.keep_prob)
     # self.row_pool = self.max_pool(self.row_conv, scope='row_pool')
-    # self.row_pool = tf.nn.dropout(self.row_pool, hp.keep_prob)
+    # self.row_pool = tf.nn.dropout(self.row_pool, self.keep_prob)
 
     # Flatten and concat the two
     self.final = tf.concat([self.col_pool, self.row_pool], 1)
@@ -313,7 +314,7 @@ class ConvAttn(PairWiseAttn):
     for i in range(hp.h_layers):
       name = "dense{}".format(i)
       self.final = dense(self.final, in_dim, hp.fc_units,act=tf.nn.relu,scope=name)
-      self.final = tf.nn.dropout(self.final, hp.keep_prob)
+      self.final = tf.nn.dropout(self.final, self.keep_prob)
       in_dim=hp.fc_units
 
     # Output layer
