@@ -46,15 +46,22 @@ Base settings:
 'padding'               : 'VALID',
 'rnn_in_keep_prob'      : 1.0,
 'variational_recurrent' : False
-```
+
 
 ## Results
 
 ### Dataset: Giga also
 Single param variation
-Model     | param           | value  | val   | test  | epoch
-----------|-----------------|--------|-------|-------|
-AttnAttn  | *base*          | *base* | 78.73 | 77.76 | 8
+Model    | param     | value  | val acc  | test acc | epoch
+---------|-----------|--------|-------|-------|
+AttnAttn | *base*    | *base* | 79.30 | 78.90 | 5
+AttnAttn | word drop | True   | 79.51 | 78.92 | 5
+
+Multi param
+Model      | param/value    | val acc  | test acc | epoch
+AttnAttn | cell units/256, in keep prob/0.5, word gate/True | 80.06 | 79.61 | 20
+
+#### OLD
 AttnAttn  | RNN units       | 256    | 78.79 | 78.68 | 3
 AttnAttn  | RNN units       | 512    | 78.76 | 78.57 | 5
 AttnAttn  | h_layers        | 1      | 76.32 | 75.86 | 8
