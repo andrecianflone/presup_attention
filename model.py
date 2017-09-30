@@ -54,7 +54,9 @@ class PairWiseAttn():
                                 cell_bw, self.embedded, self.input_len)
 
     # Word gate
-    # self.encoded_outputs = self.word_gate(self.embedded, self.input_len, self.encoded_outputs)
+    if hp.word_gate == True:
+      self.encoded_outputs = self.word_gate(\
+                          self.embedded, self.input_len, self.encoded_outputs)
 
     # Pair-wise score
     self.p_w = self.pair_wise_matching(self.encoded_outputs)
@@ -103,15 +105,18 @@ class PairWiseAttn():
     that never contribute to presup triggering, such as stop words?
     """
     # Reshape to rank 2 tensor so timestep is no longer a dimension
+    enc_shape = tf.shape(encoded_outputs)
     embedded = tf.reshape(embedded, [-1, self.emb_size])
-    encoded_outputs  = tf.reshape(encoded_outputs, [-1, hp.cell_units])
+    encoded_outputs  = tf.reshape(encoded_outputs, [-1, self.bi_encoder_hidden])
 
     # Word gate
-    gate = dense(embedded, self.emb_size, hp.cell_units, act=tf.nn.sigmoid)
+    gate = dense(embedded, self.emb_size, self.bi_encoder_hidden, 'word_gate',
+        act=tf.nn.sigmoid)
+    gate = tf.nn.dropout(gate, self.keep_prob)
     gated = tf.multiply(gate, encoded_outputs)
 
     # Reshape back to the original tensor shape
-    gated = tf.reshape(gated, [-1, max_seq_len, vocab_size])
+    gated = tf.reshape(gated, enc_shape)
     return gated
 
   def pair_wise_matching(self, rnn_h):
@@ -317,13 +322,13 @@ class ConvAttn(PairWiseAttn):
   def get_logits(self, col_attn, row_attn):
     # Convolve + non-linearity
     self.col_conv = self.convolution(col_attn, scope='col_conv')
-    # self.row_conv = self.convolution(row_attn, scope='row_conv')
+    self.row_conv = self.convolution(row_attn, scope='row_conv')
 
     # Pool
     self.col_pool = self.max_pool(self.col_conv, scope='col_pool')
     self.col_pool = tf.nn.dropout(self.col_pool, self.keep_prob)
-    # self.row_pool = self.max_pool(self.row_conv, scope='row_pool')
-    # self.row_pool = tf.nn.dropout(self.row_pool, self.keep_prob)
+    self.row_pool = self.max_pool(self.row_conv, scope='row_pool')
+    self.row_pool = tf.nn.dropout(self.row_pool, self.keep_prob)
 
     # Flatten and concat the two
     self.final = tf.concat([self.col_pool, self.row_pool], 1)
@@ -366,6 +371,86 @@ class ConvAttn(PairWiseAttn):
       h = tf.nn.relu(tf.nn.bias_add(conv, bias))
     return h
 
+class ConvAttn2(PairWiseAttn):
+  """
+  1D convolve rows and cols
+  Given pair-wise matching score tensors, we convolve over them. Intuition
+  is to detect clusters of local attention
+  """
+  def __init__(self, params, embedding, fc_layer=True):
+    super().__init__(params, embedding)
+
+  # Override logits function
+  def get_logits(self, col_attn, row_attn):
+    # Convolve col attn matrix as 1D over columns
+    # Kernel of shape [filter_height, filter_width, in_channels, out_channels]
+    # Col
+    k_shape = [hp.max_seq_len, 1, 1, 1]
+    self.col_conv = self.convolution(col_attn, k_shape, scope='col_conv')
+    self.col_conv = tf.nn.dropout(self.col_conv, self.keep_prob)
+    self.col_conv = tf.squeeze(self.col_conv, [1,3])
+    # Row
+    k_shape = [1, hp.max_seq_len, 1, 1]
+    self.row_conv = self.convolution(row_attn, k_shape, scope='row_conv')
+    self.row_conv = tf.nn.dropout(self.row_conv, self.keep_prob)
+    self.row_conv = tf.squeeze(self.row_conv, [2,3])
+
+    # Flatten and concat the two
+    self.final = tf.concat([self.col_conv, self.row_conv], 1)
+
+    # Optional Hidden layers
+    in_dim = hp.max_seq_len*2
+    in_dim = self.final.get_shape()[1]
+    for i in range(hp.h_layers):
+      name = "dense{}".format(i)
+      self.final = dense(self.final, in_dim, hp.fc_units,act=tf.nn.relu,scope=name)
+      self.final = tf.nn.dropout(self.final, self.keep_prob)
+      in_dim=hp.fc_units
+
+    # Output layer
+    logits = dense(self.final, in_dim, hp.num_classes, act=None, scope="class_log")
+    return logits
+
+  def convolution(self, x, k_shape, scope):
+    """
+    Args:
+      x: a [batch_size, seq_len, seq_len] pair-wise score tensor
+      scope: need a scope name, otherwise variable naming error
+    Returns:
+      activated tensor. If x is shape [32,60,60], kernel has h/w 2, stride 2
+      and output 32, then returns tensor shape [32,29,29,32]
+    """
+    # Expand last dim for convolution operation
+    x = tf.expand_dims(x,-1)
+    with tf.variable_scope(scope):
+      kernel = tf.get_variable("c_w", shape=k_shape, dtype=floatX)
+      bias = tf.get_variable("c_b", k_shape[-1], dtype=floatX)
+      conv = tf.nn.conv2d( x, kernel, hp.conv_strides, hp.padding, name="conv")
+
+      # Batch-norm
+      if hp.batch_norm == True:
+        conv = tf.layers.batch_normalization(conv, training=self.mode)
+
+      # Activation
+      h = tf.nn.relu(tf.nn.bias_add(conv, bias))
+    return h
+
+  def max_pool(self, x, scope):
+    """
+    If say input is shape [32,29,29,32], pool shape is [1,29,29,1] with stride 1,
+    then output is [32, 32]
+    """
+    with tf.variable_scope(scope):
+      p_shape = [1, 29, 29, 1]
+      stride = [1,1,1,1]
+      pooled = tf.nn.max_pool(
+          x,
+          p_shape,
+          stride,
+          hp.padding,
+          data_format='NHWC')
+      pooled = tf.squeeze(pooled, [1,2]) # squeeze single elem dimensions
+      return pooled
   def max_pool(self, x, scope):
     """
     If say input is shape [32,29,29,32], pool shape is [1,29,29,1] with stride 1,
