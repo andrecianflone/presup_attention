@@ -45,7 +45,8 @@ Base settings:
 'out_channels'          : 32,
 'padding'               : 'VALID',
 'rnn_in_keep_prob'      : 1.0,
-'variational_recurrent' : False
+'variational_recurrent' : False,
+'word_gate'             : False
 
 
 ## Results
@@ -55,7 +56,7 @@ Single param variation
 Model    | param     | value  | val acc  | test acc | epoch
 ---------|-----------|--------|-------|-------|
 AttnAttn | *base*    | *base* | 79.30 | 78.90 | 5
-AttnAttn | word drop | True   | 79.51 | 78.92 | 5
+AttnAttn | word gate | True   | 79.51 | 78.94 | 5
 
 Multi param
 Model      | param/value    | val acc  | test acc | epoch

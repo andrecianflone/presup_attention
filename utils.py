@@ -8,6 +8,7 @@ import numpy as np
 from numpy.random import RandomState
 import pickle, json, tarfile
 from pydoc import locate
+import copy
 
 class Progress():
   """ Pretty print progress for neural net training """
@@ -117,47 +118,49 @@ def decoder_mask():
 
 class HParams():
   def __init__(self):
-    p = argparse.ArgumentParser(description='Presupposition attention')
+    parser = argparse.ArgumentParser(description='Presupposition attention')
 
     # General flags
-    p.add_argument('--data_dir', type=str, default="../presup_giga_also/")
-    p.add_argument('--model', type=str, default="AttnAttn")
-    p.add_argument('--load_saved', type=str, default=False)
-    p.add_argument('--ckpt_dir', type=str, default='ckpt')
-    p.add_argument('--ckpt_name', type=str, default='ckpt')
+    add = parser.add_argument
+    add('--data_dir', type=str, default="../presup_giga_also/")
+    add('--model', type=str, default="AttnAttn")
+    add('--load_saved', type=str, default=False)
+    add('--ckpt_dir', type=str, default='ckpt')
+    add('--ckpt_name', type=str, default='ckpt')
+    add('--mode', type=int, default=1, help='train: 1, test:0')
 
     # Hyperparams
-    p.add_argument('--emb_trainable', type=bool, default=False)
-    p.add_argument('--batch_size', type=int, default=64)
-    p.add_argument('--max_seq_len', type=int, default=60)
-    p.add_argument('--max_epochs', type=int, default= 50)
-    p.add_argument('--early_stop', type=int, default= 10)
-    p.add_argument('--rnn_in_keep_prob', type=float, default=1.0)
-    p.add_argument('--word_gate', type=bool, default=False)
+    add('--emb_trainable', action='store_true', default=False)
+    add('--batch_size', type=int, default=64)
+    add('--max_seq_len', type=int, default=60)
+    add('--max_epochs', type=int, default= 50)
+    add('--early_stop', type=int, default= 10)
+    add('--rnn_in_keep_prob', type=float, default=1.0)
+    add('--word_gate', action='store_true', default=False)
     # Variational recurrent: if true, same rnn drop mask at each step
-    p.add_argument('--variational_recurrent',type=bool, default = False)
-    p.add_argument('--keep_prob', type=float, default=0.5)
-    p.add_argument('--eval_every', type=int, default=300)
-    p.add_argument('--num_classes', type=int, default=2)
-    p.add_argument('--l_rate', type=float, default= 0.001)
-    p.add_argument('--cell_units', type=int, default=128)
-    p.add_argument('--cell_type', type=str, default='LSTMCell')
-    p.add_argument('--optimizer', type=str, default='AdamOptimizer')
+    add('--variational_recurrent', action='store_true', default = False)
+    add('--keep_prob', type=float, default=0.5)
+    add('--eval_every', type=int, default=300)
+    add('--num_classes', type=int, default=2)
+    add('--l_rate', type=float, default= 0.001)
+    add('--cell_units', type=int, default=128)
+    add('--cell_type', type=str, default='LSTMCell')
+    add('--optimizer', type=str, default='AdamOptimizer')
 
     # Hyper params for dense layers
-    p.add_argument('--h_layers', type=int, default=0)
-    p.add_argument('--fc_units', type=int, default=64)
+    add('--h_layers', type=int, default=0)
+    add('--fc_units', type=int, default=64)
 
     # Hyper params for convnet
-    p.add_argument('--batch_norm', type=bool, default=False)
-    p.add_argument('--filt_height', type=int, default=3)
-    p.add_argument('--filt_width', type=int, default=3)
+    add('--batch_norm', action='store_true', default=False)
+    add('--filt_height', type=int, default=3)
+    add('--filt_width', type=int, default=3)
     # For conv_stride: since input is "NHWC", no batch/channel stride
-    p.add_argument('--conv_strides', nargs=4, default=[1,1,1,1])
-    p.add_argument('--padding', type=str, default="VALID")
-    p.add_argument('--out_channels', type=int, default=32)
+    add('--conv_strides', nargs=4, default=[1,1,1,1])
+    add('--padding', type=str, default="VALID")
+    add('--out_channels', type=int, default=32)
 
-    args = p.parse_args()
+    args = parser.parse_args()
     self._init_attributes(args)
 
   def _init_attributes(self, args):
@@ -182,17 +185,17 @@ def save_model(sess, saver, hp, result, step, if_global_best=1):
   """
   directory = hp.ckpt_dir
   name = hp.ckpt_name
-  if not os.path.exists(directory):
-    os.makedirs(directory)
+  if not os.path.exists(directory): os.makedirs(directory)
   path = directory + "/" + name
   hp_path = path+"_hp.pkl"
   result_pkl = path+"_result.pkl"
-  result_json = path+"_result.json"
+  info = copy.deepcopy(result)
+  info['passed args'] = sys.argv
 
   # Save files temporarily to disk
   pickle.dump(hp, open(hp_path, "wb"))
   pickle.dump(result, open(result_pkl, "wb"))
-  with open(result_json, "w") as f: json.dump(result, f)
+  with open(path+"_info.json", "w") as f: json.dump(info, f)
   model_path = saver.save(sess, path+"_model.ckpt", global_step=step)
 
   # Tar the data

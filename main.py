@@ -3,7 +3,7 @@ import sys
 import os
 import tensorflow as tf
 import numpy as np
-from train import train_model
+from train import train_model, examine_attn
 from utils import HParams, load_model
 # Ugly hack: add parent as package to allow relative imports
 PACKAGE_PARENT = '..'
@@ -21,6 +21,7 @@ tf.set_random_seed(random_seed)
 if __name__=="__main__":
   # Get hyperparams from argparse and defaults
   hp = HParams()
+  mode = hp.mode
 
   # Get data
   emb, word_idx_map, data = load_data(hp.data_dir)
@@ -30,7 +31,11 @@ if __name__=="__main__":
     # Get the model
     model, saver, hp, result = load_model(sess, emb, hp)
 
+    # Check the params
     print(hp)
 
-    # Train the model!
-    train_model(hp, sess, saver, model, result, data)
+    if mode == 1:
+      # Train the model!
+      train_model(hp, sess, saver, model, result, data)
+    else:
+      examine_attn(hp, sess, model, data)
