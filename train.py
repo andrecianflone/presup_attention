@@ -14,14 +14,16 @@ def train_model(params, sess, saver, model, result, data):
   if result is not None:
     best_acc = result['va_acc']
     te_acc = result['te_acc']
+    epoch = result['epoch']
   else:
     best_acc = 0
     te_acc = 0
+    epoch = 0
   prog = Progress(calc_num_batches(trX, hp.batch_size), best_acc, te_acc)
   best_epoch = 0
 
   # Begin training and occasional validation
-  for epoch in range(hp.max_epochs):
+  for epoch in range(epoch, epoch+hp.max_epochs):
     prog.epoch_start()
     for batch in make_batches(trX, trXlen, trY, hp.batch_size,
                                                   shuffle=True, seed=epoch):

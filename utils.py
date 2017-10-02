@@ -11,19 +11,20 @@ from pydoc import locate
 
 class Progress():
   """ Pretty print progress for neural net training """
-  def __init__(self, batches, best_val=0, test_val=0,progress_bar=True, bar_length=30, track_best=True):
+  def __init__(self, batches, best_val=0, test_val=0, epoch=0,
+                            progress_bar=True, bar_length=30, track_best=True):
     self.progress_bar = progress_bar # boolean
     self.bar_length = bar_length
     self.t1 = datetime.now()
     self.train_start_time = self.t1
     self.batches = batches
     self.current_batch = 0
-    self.epoch = 0
     self.last_eval = '' # save last eval to add after train
     self.last_train = ''
     self.track_best = track_best
     self.best_val = best_val
     self.test_val = test_val
+    self.epoch = epoch
 
   def epoch_start(self):
     print()
@@ -180,7 +181,7 @@ def save_model(sess, saver, hp, result, step, if_global_best=1):
     if_global_best: if true, overwrites best model in directory if better
   """
   directory = hp.ckpt_dir
-  name = hp.name
+  name = hp.ckpt_name
   if not os.path.exists(directory):
     os.makedirs(directory)
   path = directory + "/" + name
@@ -203,9 +204,10 @@ def save_model(sess, saver, hp, result, step, if_global_best=1):
     if name in f:
       tar.add(directory+"/"+f)
       os.remove(directory+"/"+f)
-  tar.add(directory+"/"+'checkpoint') # add mysterious file
+  ckpt_file = directory+"/"+'checkpoint'
+  tar.add(ckpt_file) # add mysterious file
+  os.remove(ckpt_file) if os.path.exists(ckpt_file) else None
   tar.close()
-
 
 def load_model(sess, emb, hp):
   """ Returns new model or presaved model """
