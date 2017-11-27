@@ -46,3 +46,6 @@ if __name__=="__main__":
       train_model(hp, sess, saver, model, result, data)
     else:
       examine_attn(hp, sess, model, word_idx_map, inv_vocab, data)
+    pass
+
+

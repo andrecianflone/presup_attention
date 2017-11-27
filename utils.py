@@ -1,14 +1,11 @@
 # Author: Andre Cianflone
 from datetime import datetime
 from pprint import pformat, pprint
+import os, argparse, pickle, json, tarfile, copy
+from pydoc import locate
 import tensorflow as tf
-import os
-import argparse
 import numpy as np
 from numpy.random import RandomState
-import pickle, json, tarfile
-from pydoc import locate
-import copy
 
 class Progress():
   """ Pretty print progress for neural net training """

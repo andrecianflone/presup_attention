@@ -1,10 +1,11 @@
 # Author: Andre Cianflone
 import tensorflow as tf
 from model import PairWiseAttn, AttnAttn, ConvAttn
-from utils import Progress, make_batches, calc_num_batches, save_model, load_model
+from utils import Progress, make_batches, calc_num_batches, save_model, load_model, one_hot
 import numpy as np
 from pydoc import locate
 from sklearn.metrics import accuracy_score
+import matplotlib.pyplot as plt
 # np.random.seed(seed=random_seed)
 
 def train_model(params, sess, saver, model, result, data):
@@ -81,20 +82,38 @@ def call_model(sess, model, batch, fetch, keep_prob, rnn_in_keep_prob, mode):
   result = sess.run(fetch,feed)
   return result
 
-def sample_to_sent:
-  #TODO
-  pass
+def sample_to_sent(x, inv_vocab):
+  """ Swap integers in `x` for words, retun list of words"""
+  inv_vocab[0] = '<pad>'
+  sample = [inv_vocab[w] for w in x]
+  return sample
+
+def chart_sent(sent, attn, y_pred, y_true):
+  """ Bar charts the attention with words in `sent` as x tick labels """
+  x = np.arange(len(sent))
+  plt.bar(x, attn, width=1)
+  plt.xticks(x, sent, rotation='vertical')
+  label = 'pred: {}, true: {}'.format(y_pred, y_true)
+  plt.xlabel(label, fontsize=14)
+  plt.margins(0.2)
+  plt.subplots_adjust(bottom=0.15)
+  plt.show()
 
 def examine_attn(hp, sess, model, vocab, inv_vocab, data):
   fetch = [model.col_attn, model.row_attn, model.attn_over_attn, model.y_pred, model.y_true]
   trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY = data
-  # Grab a sample
+  # Grab a random sample
   rand = np.random.randint(len(teX))
-  # sample = [r_teX, r_teXlen, r_teY] = teX[rand], teXlen[rand], teY[rand]
-  sample = [teX[rand], teXlen[rand], teY[rand]]
+  y = one_hot(teY)
+  sample = (teX[rand:rand+2], teXlen[rand:rand+2], y[rand:rand+2])
+  # sample = (np.expand_dims(teX[rand], axis=0),
+            # np.expand_dims(teXlen[rand], axis=0),
+            # np.expand_dims(one_hot(teY[rand]),axis=0)
+            # )
   col, row, aoa, y_pred, y_true = \
-                          call_model(sess, model, batch, sample, 1, 1, mode=0)
-
+                            call_model(sess, model, sample, fetch, 1, 1, mode=0)
+  # Parse sample to text
+  sent = sample_to_sent(sample[0][0], inv_vocab)
+  chart_sent(sent, aoa[0], y_pred[0], y_true[0])
+  print(sent)
   pass
-
-
