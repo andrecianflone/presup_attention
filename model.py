@@ -278,11 +278,11 @@ class AttnAttn(PairWiseAttn):
   # Override logits function
   def get_logits(self, col_attn, row_attn):
     # Get attn over attn
-    attnattn = self.attn_attn(col_attn, row_attn)
+    self.attn_over_attn = self.attn_attn(col_attn, row_attn)
 
     # FC layer before output
     in_dim = hp.max_seq_len
-    attnattn = dense(attnattn, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
+    attnattn = dense(self.attn_over_attn, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
     attnattn = tf.nn.dropout(attnattn, self.keep_prob)
 
     in_dim=hp.fc_units

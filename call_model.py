@@ -82,12 +82,14 @@ def call_model(sess, model, batch, fetch, keep_prob, rnn_in_keep_prob, mode):
   return result
 
 def examine_attn(hp, sess, model, data):
-  fetch = [model.col_attn, model.row_attn, model.y_pred, model.y_true]
+  fetch = [model.col_attn, model.row_attn, model.attn_over_attn, model.y_pred, model.y_true]
   trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY = data
   # Grab a sample
-  rand = np.random.randint(len(teX, size=2)[0]
-  sample = [r_teX, r_teXlen, r_teY] = teX[rand], teXlen[rand], teY[rand]
-  col, row, y_pred, y_true = \
+  rand = np.random.randint(len(teX))
+  # sample = [r_teX, r_teXlen, r_teY] = teX[rand], teXlen[rand], teY[rand]
+  sample = [teX[rand], teXlen[rand], teY[rand]]
+  col, row, aoa, y_pred, y_true = \
                           call_model(sess, model, batch, sample, 1, 1, mode=0)
 
+  pass
 

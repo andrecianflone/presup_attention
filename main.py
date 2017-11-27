@@ -1,9 +1,12 @@
 # Author: Andre Cianflone
+
+# cmd to test a sample:
+# python main.py --load_saved --ckpt_name also_word --mode 0
 import sys
 import os
 import tensorflow as tf
 import numpy as np
-from train import train_model, examine_attn
+from call_model import train_model, examine_attn
 from utils import HParams, load_model
 # Ugly hack: add parent as package to allow relative imports
 PACKAGE_PARENT = '..'
@@ -24,7 +27,7 @@ if __name__=="__main__":
   mode = hp.mode
 
   # Get data
-  emb, word_idx_map, data = load_data(hp.data_dir)
+  emb, word_idx_map, vocab, data = load_data(hp.data_dir)
 
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:

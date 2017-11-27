@@ -124,7 +124,7 @@ class HParams():
     add = parser.add_argument
     add('--data_dir', type=str, default="../presup_giga_also/")
     add('--model', type=str, default="AttnAttn")
-    add('--load_saved', type=str, default=False)
+    add('--load_saved', action='store_true', default=False)
     add('--ckpt_dir', type=str, default='ckpt')
     add('--ckpt_name', type=str, default='ckpt')
     add('--mode', type=int, default=1, help='train: 1, test:0')
@@ -213,10 +213,10 @@ def save_model(sess, saver, hp, result, step, if_global_best=1):
   tar.close()
 
 def load_model(sess, emb, hp):
-  """ Returns new model or presaved model """
+  """ Returns new model or presaved model depending on hyperparams"""
   dirt, name, load_saved = hp.ckpt_dir, hp.ckpt_name, hp.load_saved
 
-  # New model
+  # If new, returns new model
   if load_saved == False:
     model = locate("model." + hp.model)
     model = model(hp, emb)
