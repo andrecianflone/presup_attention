@@ -27,7 +27,11 @@ if __name__=="__main__":
   mode = hp.mode
 
   # Get data
-  emb, word_idx_map, vocab, data = load_data(hp.data_dir)
+  emb, word_idx_map, data = load_data(hp.data_dir)
+
+  inv_vocab = {}
+  for k,v in word_idx_map.items():
+    inv_vocab[v] = k
 
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:
@@ -41,4 +45,4 @@ if __name__=="__main__":
       # Train the model!
       train_model(hp, sess, saver, model, result, data)
     else:
-      examine_attn(hp, sess, model, data)
+      examine_attn(hp, sess, model, word_idx_map, inv_vocab, data)
