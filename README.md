@@ -53,14 +53,15 @@ Base settings:
 
 ### Dataset: Giga also
 Single param variation
-Model    | param     | value  | val acc  | test acc | epoch
----------|-----------|--------|-------|-------|
-AttnAttn | *base*    | *base* | 79.30 | 78.90 | 5
-AttnAttn | word gate | True   | 79.51 | 78.94 | 5
+Model     | param       | value    | val acc | test acc | epoch
+--------- | ----------- | -------- | ------- | -------  |
+AttnAttn  | *base*      | *base*   | 79.30   | 78.90    | 5
+AttnAttn  | word gate   | True     | 79.51   | 78.94    | 5
 
 Multi param
-Model      | param/value    | val acc  | test acc | epoch
-AttnAttn | cell units/256, in keep prob/0.5, word gate/True | 80.06 | 79.61 | 20
+Model    | param/value                                      | val acc | test acc | epoch
+AttnAttn | cell units/256, in keep prob/0.5, word gate/True | 80.06   | 79.61    | 20
+
 
 #### OLD
 AttnAttn  | RNN units       | 256    | 78.79 | 78.68 | 3

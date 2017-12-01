@@ -267,6 +267,9 @@ class PairWiseAttn():
 
     return y_pred, y_true
 
+class StackedAttn(PairWiseAttn):
+  pass
+
 class AttnAttn(PairWiseAttn):
   """
   Attn over attn, based mostly on https://arxiv.org/pdf/1607.04423.pdf,

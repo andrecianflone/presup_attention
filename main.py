@@ -2,6 +2,8 @@
 
 # cmd to test a sample:
 # python main.py --load_saved --ckpt_name also_word --mode 0
+# debug
+# python -m pudb main.py --load_saved --ckpt_name also_word --mode 0
 import sys
 import os
 import tensorflow as tf
@@ -29,6 +31,7 @@ if __name__=="__main__":
   # Get data
   emb, word_idx_map, data = load_data(hp.data_dir)
 
+  # Create inverse vocab, mapping integer to word
   inv_vocab = {}
   for k,v in word_idx_map.items():
     inv_vocab[v] = k
@@ -41,6 +44,7 @@ if __name__=="__main__":
     # Check the params
     print(hp)
 
+    # Train the model or examine results
     if mode == 1:
       # Train the model!
       train_model(hp, sess, saver, model, result, data)
