@@ -120,6 +120,8 @@ class HParams():
     # General flags
     add = parser.add_argument
     add('--data_dir', type=str, default="../presup_giga_also/")
+    add('--pickle', type=str, default="processed.pkl")
+    # add('--pickle', type=str, default="processed_singleUnk.pkl")
     add('--model', type=str, default="AttnAttn")
     add('--load_saved', action='store_true', default=False)
     add('--ckpt_dir', type=str, default='ckpt')
@@ -208,6 +210,18 @@ def save_model(sess, saver, hp, result, step, if_global_best=1):
   tar.add(ckpt_file) # add mysterious file
   os.remove(ckpt_file) if os.path.exists(ckpt_file) else None
   tar.close()
+
+def data_info(emb,word_idx_map,data):
+  # Create inverse vocab, mapping integer to word
+  inv_vocab = {}
+  for k,v in word_idx_map.items():
+    inv_vocab[v] = k
+
+  unk_idx = 112368
+  unk_emb = emb[112368]
+  unk_emb2 = emb[143661]
+
+  return inv_vocab
 
 def load_model(sess, emb, hp):
   """ Returns new model or presaved model depending on hyperparams"""

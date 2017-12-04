@@ -57,14 +57,17 @@ Model     | param       | value    | val acc | test acc | epoch
 --------- | ----------- | -------- | ------- | -------  |
 AttnAttn  | *base*      | *base*   | 79.30   | 78.90    | 5
 AttnAttn  | word gate   | True     | 79.51   | 78.94    | 5
+NoAttn | *base* | *base* | 
 
 Multi param
 Model    | param/value                                      | command | val acc | test acc | epoch
 AttnAttn | cell units/256, in keep prob/0.5, word gate/True | 1       | 81.43   | 80.12| 17
+AttnAttn | cell units/256, in keep prob/0.5, word gate/True, emb_trainable/true | 2       | 83.48 | 70.06 | 
 
 Command:
 1: python main.py --cell_units 256 --rnn_in_keep_prob 0.5 --word_gate --ckpt_name also_word_fix_proc
-
+2: python main.py --cell_units 256 --rnn_in_keep_prob 0.5 --word_gate --emb_trainable True
+3: python main.py --model NoAttn --ckpt_name also_noattn
 
 #### OLD
 AttnAttn  | RNN units       | 256    | 78.79 | 78.68 | 3

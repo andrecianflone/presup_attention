@@ -270,6 +270,29 @@ class PairWiseAttn():
 class StackedAttn(PairWiseAttn):
   pass
 
+class NoAttn(PairWiseAttn):
+  """
+  Run the experiment using the mean of the encoded states. We want to see
+  if the results are the same as the previous LSTM experiment
+
+  Model details:
+    LSTM units: 300 (same as embedding size)
+    pooling: Take mean of all timestep hidden layers to get h_T
+    FC over pooled
+    (see the ACL 2016 paper for details)
+  """
+  # Override logits function
+  def get_logits(self, col_attn, row_attn):
+    out = tf.reduce_mean(self.encoded_outputs, axis=1)
+
+    in_dim = self.bi_encoder_hidden
+    # out = dense(mean, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
+    out = tf.nn.dropout(out, self.keep_prob)
+
+    # Output layer
+    logits = dense(out, in_dim, hp.num_classes, act=None, scope="class_log")
+    return logits
+
 class AttnAttn(PairWiseAttn):
   """
   Attn over attn, based mostly on https://arxiv.org/pdf/1607.04423.pdf,

@@ -9,7 +9,7 @@ import os
 import tensorflow as tf
 import numpy as np
 from call_model import train_model, examine_attn
-from utils import HParams, load_model
+from utils import HParams, load_model, data_info
 # Ugly hack: add parent as package to allow relative imports
 PACKAGE_PARENT = '..'
 SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
@@ -29,12 +29,9 @@ if __name__=="__main__":
   mode = hp.mode
 
   # Get data
-  emb, word_idx_map, data = load_data(hp.data_dir)
+  emb, word_idx_map, data = load_data(hp.data_dir, hp.pickle)
 
-  # Create inverse vocab, mapping integer to word
-  inv_vocab = {}
-  for k,v in word_idx_map.items():
-    inv_vocab[v] = k
+  inv_vocab =  data_info(emb,word_idx_map,data)
 
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:
