@@ -53,16 +53,18 @@ Base settings:
 
 ### Dataset: Giga also
 Single param variation
-Model     | param       | value    | val acc | test acc | epoch
---------- | ----------- | -------- | ------- | -------  |
-AttnAttn  | *base*      | *base*   | 79.30   | 78.90    | 5
-AttnAttn  | word gate   | True     | 79.51   | 78.94    | 5
-NoAttn | *base* | *base* | 
+Model    | param     | value  | command | val acc | test acc | epoch
+---------|-----------|--------|---------|---------|----------|
+AttnAttn | *base*    | *base* |         | 79.30   | 78.90    | 5
+AttnAttn | word gate | True   |         | 79.51   | 78.94    | 5
+NoAttn   | *base*    | *base* | 3       | 81.64   | 80.87    | 4
 
 Multi param
-Model    | param/value                                      | command | val acc | test acc | epoch
-AttnAttn | cell units/256, in keep prob/0.5, word gate/True | 1       | 81.43   | 80.12| 17
-AttnAttn | cell units/256, in keep prob/0.5, word gate/True, emb_trainable/true | 2       | 83.48 | 70.06 | 
+Model    | param/value                                                            | command | val acc | test acc | epoch
+---------|------------------------------------------------------------------------|---------|---------|----------|
+AttnAttn | cell units/256, in keep prob/0.5, word gate/True                       | 1       | 81.43   | 80.12    | 17
+AttnAttn | cell units/256, in keep prob/0.5, word gate/True, emb_trainable/true   | 2       | 83.48   | 70.06    | 2
+AttnAttn | cell units/256, in keep prob/0.5, word gate/True , same random for unk | 1       | 80.08   | 78.20    | 23
 
 Command:
 1: python main.py --cell_units 256 --rnn_in_keep_prob 0.5 --word_gate --ckpt_name also_word_fix_proc
