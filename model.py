@@ -7,8 +7,10 @@ import tensorflow as tf
 floatX = tf.float32
 intX = tf.int32
 
-class PairWiseAttn():
-  """ BiRNN + Pair-wise Attn + Conv """
+class RNN_base():
+  """
+  Base RNN model
+  """
   def __init__(self,params, embedding):
     """
     Args:
@@ -20,7 +22,6 @@ class PairWiseAttn():
     # helper variable to keep track of steps
     self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    self.bi_encoder_hidden = hp.cell_units * 2
 
     ############################
     # Inputs
@@ -44,29 +45,30 @@ class PairWiseAttn():
     self.batch_size = tf.shape(self.inputs)[0]
 
     ############################
-    # Build model
+    # Encode input with RNN
     ############################
-    # Forward/backward cells
-    cell_fw, cell_bw = self.build_cell()
 
-    # Get encoded inputs
-    self.encoded_outputs, self.encoded_state = self.encoder_bi(cell_fw,
-                                cell_bw, self.embedded, self.input_len)
+    # Forward/backward cells
+    if hp.birnn==True:
+      self.encoder_h_size = hp.cell_units * 2
+      cell_fw, cell_bw = self.build_cell(birnn=True)
+      # Get encoded inputs
+      self.encoded_outputs, self.encoded_state = self.bi_rnn_encode(
+                               self.embedded, self.input_len,cell_fw, cell_bw)
+    else:
+      self.encoder_h_size = hp.cell_units
+      cell = self.build_cell(birnn=False)
+      # Get encoded inputs
+      self.encoded_outputs, self.encoded_state = self.rnn_encode(
+                                         self.embedded, self.input_len,cell)
 
     # Word gate
     if hp.word_gate == True:
       self.encoded_outputs = self.word_gate(\
                           self.embedded, self.input_len, self.encoded_outputs)
 
-    # Pair-wise score
-    self.p_w = self.pair_wise_matching(self.encoded_outputs)
-
-    # Attn matrices
-    self.col_attn, self.row_attn = self.attn_matrices(self.p_w, self.input_len,
-                                                          self.batch_size)
-
-    self.logits = self.get_logits(self.col_attn,self.row_attn)
-
+    # Default logits
+    self.logits = self.get_logits(self.encoded_outputs)
     ############################
     # Loss/Optimize
     ############################
@@ -80,25 +82,6 @@ class PairWiseAttn():
     # Optimize
     self.optimize = self.optimize_step(self.cost,self.global_step)
 
-  def get_logits(self, col_attn, row_attn):
-    """
-    Default method for logits. Simply concat the attn matrices and connect
-    to output
-    """
-    self.concat = self.flat_concat(col_attn, row_attn)
-    in_dim = hp.max_seq_len**2*2
-    logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
-    return logits
-
-  def flat_concat(self, col_attn, row_attn):
-    """ Reshape and concat the normalized attention """
-    flat_col_dim = tf.shape(col_attn)[1]*tf.shape(col_attn)[2]
-    flat_col = tf.reshape(col_attn, [-1, flat_col_dim])
-    flat_row_dim = tf.shape(row_attn)[1]*tf.shape(row_attn)[2]
-    flat_row = tf.reshape(row_attn, [-1, flat_row_dim])
-    concat = tf.concat([flat_col, flat_row], 1)
-    return concat
-
   def word_gate(self, embedded, input_len, encoded_outputs):
     """
     To increase sparsity in the attention layer, jointly learn to drop words
@@ -107,41 +90,17 @@ class PairWiseAttn():
     # Reshape to rank 2 tensor so timestep is no longer a dimension
     enc_shape = tf.shape(encoded_outputs)
     embedded = tf.reshape(embedded, [-1, self.emb_size])
-    encoded_outputs  = tf.reshape(encoded_outputs, [-1, self.bi_encoder_hidden])
+    encoded_outputs  = tf.reshape(encoded_outputs, [-1, self.encoder_h_size])
 
     # Word gate
-    gate = dense(embedded, self.emb_size, self.bi_encoder_hidden, 'word_gate',
-        act=tf.nn.sigmoid)
+    gate = dense(embedded, self.emb_size, self.encoder_h_size, 'word_gate',
+	act=tf.nn.sigmoid)
     gate = tf.nn.dropout(gate, self.keep_prob)
     gated = tf.multiply(gate, encoded_outputs)
 
     # Reshape back to the original tensor shape
     gated = tf.reshape(gated, enc_shape)
     return gated
-
-  def pair_wise_matching(self, rnn_h):
-    """
-    Returns pair-wise matching matrix of shape [batch_size, time, time]
-    Args:
-      rnn_h: rnn hidden states over time (output of dynamic encoder)
-    """
-    # Since rnn_h is [batch_size, time, h_size], transpose 2 and 1 dim
-    x = tf.transpose(rnn_h, perm=[0, 2, 1])
-    # Output of matmul should be [batch_size, time,time]
-    p_w = tf.matmul(rnn_h,x)
-    return p_w
-
-  def attn_matrices(self, p_w, input_len, batch_size):
-    """
-    Create column-wise and row-wise softmax, masking 0
-    Based on https://arxiv.org/abs/1607.04423
-    """
-    # Softmax over 2nd dim
-    rows = tf.nn.softmax(p_w, dim=1)
-    # Softmax over 3rd dim
-    cols = tf.nn.softmax(p_w, dim=2)
-
-    return rows, cols
 
   def embedded(self, word_ids, embedding_tensor, scope="embedding"):
     """Swap ints for dense embeddings, on cpu.
@@ -169,15 +128,19 @@ class PairWiseAttn():
     else:
       return embedding
 
-  def build_cell(self, cell_type="LSTMCell"):
+  def build_cell(self, cell_type="LSTMCell", birnn=True):
     # Cells initialized with scope initializer
     with tf.variable_scope("Cell", initializer=tf.orthogonal_initializer):
       Cell = locate("tensorflow.contrib.rnn." + cell_type)
       if Cell is None:
         raise ValueError("Invalid cell type " + cell_type)
       cell_fw = self.drop_wrap(Cell(hp.cell_units))
-      cell_bw = self.drop_wrap(Cell(hp.cell_units))
 
+      # If unidirectional, return only forward
+      if birnn==False:
+        return cell_fw
+
+      cell_bw = self.drop_wrap(Cell(hp.cell_units))
       return cell_fw, cell_bw
 
   def drop_wrap(self, cell):
@@ -190,7 +153,31 @@ class PairWiseAttn():
           input_size            = self.emb_size)
     return cell
 
-  def encoder_bi(self, cell_fw, cell_bw, x, seq_len, init_state_fw=None,
+  def rnn_encode(self, x, seq_len, cell_fw, init_state=None):
+    """
+    Dynamic bidirectional encoder. For each x in the batch, the outputs beyond
+    seq_len will be zeroed out.
+    Args:
+      cell: forward cell
+      x: inputs to encode
+      seq_len : length of each row in x batch tensor, needed for dynamic_rnn
+    Returns:
+      outputs: Tensor of shape [batch,time,units]
+      state: last hidden state
+    """
+    # Output is the outputs at all time steps, state is the last state
+    with tf.variable_scope("unidirectionalRNN"):
+      # Unidirectional or bidirectional RNN
+      outputs, state = tf.nn.dynamic_rnn(\
+            cell=cell_fw,
+            inputs=x,
+            sequence_length=seq_len,
+            initial_state=init_state,
+            dtype=floatX)
+
+    return outputs, state
+
+  def bi_rnn_encode(self, x, seq_len, cell_fw, cell_bw=None, init_state_fw=None,
                   init_state_bw=None):
     """
     Dynamic bidirectional encoder. For each x in the batch, the outputs beyond
@@ -208,19 +195,29 @@ class PairWiseAttn():
     """
     # Output is the outputs at all time steps, state is the last state
     with tf.variable_scope("biRNN"):
-      outputs, state = tf.nn.bidirectional_dynamic_rnn(\
-                  cell_fw=cell_fw,
-                  cell_bw=cell_bw,
-                  inputs=x,
-                  sequence_length=seq_len,
-                  initial_state_fw=init_state_fw,
-                  initial_state_bw=init_state_bw,
-                  dtype=floatX)
+      # Unidirectional or bidirectional RNN
+      if cell_bw==None:
+        outputs, state = tf.nn.dynamic_rnn(\
+            cell=cell_fw,
+            inputs=x,
+            sequence_length=seq_len,
+            initial_state=init_state_fw,
+            dtype=floatX)
+      else:
+        outputs, state = tf.nn.bidirectional_dynamic_rnn(\
+                    cell_fw=cell_fw,
+                    cell_bw=cell_bw,
+                    inputs=x,
+                    sequence_length=seq_len,
+                    initial_state_fw=init_state_fw,
+                    initial_state_bw=init_state_bw,
+                    dtype=floatX)
+
       # outputs: a tuple(output_fw, output_bw), all sequence hidden states,
       # each as tensor of shape [batch,time,units]
       # Since we don't need the outputs separate, we concat here
       outputs = tf.concat(outputs,2)
-      outputs.set_shape([None, None, self.bi_encoder_hidden])
+      outputs.set_shape([None, None, self.encoder_h_size])
       # If LSTM cell, then "state" is not a tuple of Tensors but an
       # LSTMStateTuple of "c" and "h". Need to concat separately then new
       if "LSTMStateTuple" in str(type(state[0])):
@@ -230,7 +227,7 @@ class PairWiseAttn():
       else:
         state = tf.concat(state,1)
         # Manually set shape to Tensor or all hell breaks loose
-        state.set_shape([None, self.bi_encoder_hidden])
+        state.set_shape([None, self.encoder_h_size])
     return outputs, state
 
   def optimize_step(self, loss, glbl_step):
@@ -267,10 +264,86 @@ class PairWiseAttn():
 
     return y_pred, y_true
 
+  def get_logits(self, col_attn, row_attn):
+    """
+    Default method
+    """
+    self.concat = self.flat_concat(col_attn, row_attn)
+    in_dim = hp.max_seq_len**2*2
+    logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
+    return logits
+
+  def get_logits(self, encoded_outputs):
+    """ Default final layer, mean-pool RNN states, no attention """
+    out = tf.reduce_mean(encoded_outputs, axis=1)
+
+    in_dim = self.encoder_h_size
+    # out = dense(mean, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
+    out = tf.nn.dropout(out, self.keep_prob)
+
+    # Output layer
+    logits = dense(out, in_dim, hp.num_classes, act=None, scope="class_log")
+    return logits
+
+class PairWiseAttn(RNN_base):
+  """ Pair-wise Attn """
+  def __init__(self,params, embedding):
+    super().__init__(params, embedding)
+    # Pair-wise score
+    self.p_w = self.pair_wise_matching(self.encoded_outputs)
+
+    # Attn matrices
+    self.col_attn, self.row_attn = self.attn_matrices(self.p_w, self.input_len,
+                                                          self.batch_size)
+
+    self.logits = self.get_logits(self.col_attn,self.row_attn)
+
+  def flat_concat(self, col_attn, row_attn):
+    """ Reshape and concat the normalized attention """
+    flat_col_dim = tf.shape(col_attn)[1]*tf.shape(col_attn)[2]
+    flat_col = tf.reshape(col_attn, [-1, flat_col_dim])
+    flat_row_dim = tf.shape(row_attn)[1]*tf.shape(row_attn)[2]
+    flat_row = tf.reshape(row_attn, [-1, flat_row_dim])
+    concat = tf.concat([flat_col, flat_row], 1)
+    return concat
+
+  def pair_wise_matching(self, rnn_h):
+    """
+    Returns pair-wise matching matrix of shape [batch_size, time, time]
+    Args:
+      rnn_h: rnn hidden states over time (output of dynamic encoder)
+    """
+    # Since rnn_h is [batch_size, time, h_size], transpose 2 and 1 dim
+    x = tf.transpose(rnn_h, perm=[0, 2, 1])
+    # Output of matmul should be [batch_size, time,time]
+    p_w = tf.matmul(rnn_h,x)
+    return p_w
+
+  def attn_matrices(self, p_w, input_len, batch_size):
+    """
+    Create column-wise and row-wise softmax, masking 0
+    Based on https://arxiv.org/abs/1607.04423
+    """
+    # Softmax over 2nd dim
+    rows = tf.nn.softmax(p_w, dim=1)
+    # Softmax over 3rd dim
+    cols = tf.nn.softmax(p_w, dim=2)
+
+    return rows, cols
+
+  def get_logits(self, col_attn, row_attn):
+    """
+    Simply concat the attn matrices and connect to output
+    """
+    self.concat = self.flat_concat(col_attn, row_attn)
+    in_dim = hp.max_seq_len**2*2
+    logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
+    return logits
+
 class StackedAttn(PairWiseAttn):
   pass
 
-class NoAttn(PairWiseAttn):
+class NoAttn(RNN_base):
   """
   Run the experiment using the mean of the encoded states. We want to see
   if the results are the same as the previous LSTM experiment
@@ -281,11 +354,14 @@ class NoAttn(PairWiseAttn):
     FC over pooled
     (see the ACL 2016 paper for details)
   """
+  def __init__(self, params, embedding, fc_layer=True):
+    super().__init__(params, embedding)
+
   # Override logits function
   def get_logits(self, col_attn, row_attn):
     out = tf.reduce_mean(self.encoded_outputs, axis=1)
 
-    in_dim = self.bi_encoder_hidden
+    in_dim = self.encoder_h_size
     # out = dense(mean, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
     out = tf.nn.dropout(out, self.keep_prob)
 
