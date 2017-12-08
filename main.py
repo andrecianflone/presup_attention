@@ -29,7 +29,7 @@ if __name__=="__main__":
   mode = hp.mode
 
   # Get data
-  emb, word_idx_map, data = load_data(hp.data_dir, hp.pickle)
+  emb, word_idx_map, data = load_data(hp.data_dir, hp.pickle, tagged=False)
 
   inv_vocab =  data_info(emb,word_idx_map,data)
 

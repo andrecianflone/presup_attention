@@ -53,12 +53,13 @@ Base settings:
 
 ### Dataset: Giga also
 Single param variation
-Model    | param     | value  | command | val acc | test acc | epoch
----------|-----------|--------|---------|---------|----------|
-AttnAttn | *base*    | *base* |         | 79.30   | 78.90    | 5
-AttnAttn | word gate | True   |         | 79.51   | 78.94    | 5
-biRNN only   | *base*    | *base* | 3       | 81.64   | 80.87    | 4
-RNN only   | cell_units    | 300 | 4       | 83.15   | 81.16    | 34
+Model       | param      | value  | command | val acc | test acc | epoch
+------------|------------|--------|---------|---------|----------|
+AttnAttn    | *base*     | *base* |         | 79.30   | 78.90    | 5
+AttnAttn    | word gate  | True   |         | 79.51   | 78.94    | 5
+biRNN only  | *base*     | *base* | 3       | 81.64   | 80.87    | 4
+RNN only    | cell_units | 300    | 4       | 83.15   | 81.16    | 34
+AttnAttnSum | cell_units | 300    | 5       | 82.80   | 81.45    | 16
 
 Multi param
 Model    | param/value                                                            | command | val acc | test acc | epoch
@@ -72,6 +73,7 @@ Command:
 2: python main.py --cell_units 256 --rnn_in_keep_prob 0.5 --word_gate --emb_trainable True
 3: python main.py --model NoAttn --ckpt_name also_noattn
 4: python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --model RNN_base --ckpt_name also_uni_rnn
+5: python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --model AttnAttnSum --ckpt_name also_uni_attnattnsum
 
 #### OLD
 AttnAttn  | RNN units       | 256    | 78.79 | 78.68 | 3

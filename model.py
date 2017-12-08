@@ -22,7 +22,6 @@ class RNN_base():
     # helper variable to keep track of steps
     self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
-
     ############################
     # Inputs
     ############################
@@ -62,13 +61,26 @@ class RNN_base():
       self.encoded_outputs, self.encoded_state = self.rnn_encode(
                                          self.embedded, self.input_len,cell)
 
+    if hp.parallel==True:
+      cell_emb = self.build_cell(birnn=False)
+      # Get encoded inputs
+      self.encoded_outputs_emb, self.encoded_state_emb = self.rnn_encode(
+                         self.embedded, self.input_len,cell, scope="rnn_emb")
+
     # Word gate
     if hp.word_gate == True:
       self.encoded_outputs = self.word_gate(\
                           self.embedded, self.input_len, self.encoded_outputs)
 
+    # Pair-wise score
+    self.p_w = self.pair_wise_matching(self.encoded_outputs)
+
+    # Attn matrices
+    self.col_attn, self.row_attn = self.attn_matrices(self.p_w, self.input_len,
+                                                          self.batch_size)
     # Default logits
-    self.logits = self.get_logits(self.encoded_outputs)
+    self.logits = self.get_logits(self.col_attn,self.row_attn)
+    # self.logits = None
     ############################
     # Loss/Optimize
     ############################
@@ -143,6 +155,30 @@ class RNN_base():
       cell_bw = self.drop_wrap(Cell(hp.cell_units))
       return cell_fw, cell_bw
 
+  def pair_wise_matching(self, rnn_h):
+    """
+    Returns pair-wise matching matrix of shape [batch_size, time, time]
+    Args:
+      rnn_h: rnn hidden states over time (output of dynamic encoder)
+    """
+    # Since rnn_h is [batch_size, time, h_size], transpose 2 and 1 dim
+    x = tf.transpose(rnn_h, perm=[0, 2, 1])
+    # Output of matmul should be [batch_size, time,time]
+    p_w = tf.matmul(rnn_h,x)
+    return p_w
+
+  def attn_matrices(self, p_w, input_len, batch_size):
+    """
+    Create column-wise and row-wise softmax, masking 0
+    Based on https://arxiv.org/abs/1607.04423
+    """
+    # Softmax over 2nd dim
+    rows = tf.nn.softmax(p_w, dim=1)
+    # Softmax over 3rd dim
+    cols = tf.nn.softmax(p_w, dim=2)
+
+    return rows, cols
+
   def drop_wrap(self, cell):
     """ adds dropout to a recurrent cell """
     cell = tf.contrib.rnn.DropoutWrapper(\
@@ -153,7 +189,7 @@ class RNN_base():
           input_size            = self.emb_size)
     return cell
 
-  def rnn_encode(self, x, seq_len, cell_fw, init_state=None):
+  def rnn_encode(self, x, seq_len, cell_fw, init_state=None, scope="unidirectionalRNN"):
     """
     Dynamic bidirectional encoder. For each x in the batch, the outputs beyond
     seq_len will be zeroed out.
@@ -166,7 +202,7 @@ class RNN_base():
       state: last hidden state
     """
     # Output is the outputs at all time steps, state is the last state
-    with tf.variable_scope("unidirectionalRNN"):
+    with tf.variable_scope(scope):
       # Unidirectional or bidirectional RNN
       outputs, state = tf.nn.dynamic_rnn(\
             cell=cell_fw,
@@ -265,17 +301,8 @@ class RNN_base():
     return y_pred, y_true
 
   def get_logits(self, col_attn, row_attn):
-    """
-    Default method
-    """
-    self.concat = self.flat_concat(col_attn, row_attn)
-    in_dim = hp.max_seq_len**2*2
-    logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
-    return logits
-
-  def get_logits(self, encoded_outputs):
     """ Default final layer, mean-pool RNN states, no attention """
-    out = tf.reduce_mean(encoded_outputs, axis=1)
+    out = tf.reduce_mean(self.encoded_outputs, axis=1)
 
     in_dim = self.encoder_h_size
     # out = dense(mean, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
@@ -289,13 +316,8 @@ class PairWiseAttn(RNN_base):
   """ Pair-wise Attn """
   def __init__(self,params, embedding):
     super().__init__(params, embedding)
-    # Pair-wise score
-    self.p_w = self.pair_wise_matching(self.encoded_outputs)
 
-    # Attn matrices
-    self.col_attn, self.row_attn = self.attn_matrices(self.p_w, self.input_len,
-                                                          self.batch_size)
-
+    # Override logits method
     self.logits = self.get_logits(self.col_attn,self.row_attn)
 
   def flat_concat(self, col_attn, row_attn):
@@ -307,30 +329,6 @@ class PairWiseAttn(RNN_base):
     concat = tf.concat([flat_col, flat_row], 1)
     return concat
 
-  def pair_wise_matching(self, rnn_h):
-    """
-    Returns pair-wise matching matrix of shape [batch_size, time, time]
-    Args:
-      rnn_h: rnn hidden states over time (output of dynamic encoder)
-    """
-    # Since rnn_h is [batch_size, time, h_size], transpose 2 and 1 dim
-    x = tf.transpose(rnn_h, perm=[0, 2, 1])
-    # Output of matmul should be [batch_size, time,time]
-    p_w = tf.matmul(rnn_h,x)
-    return p_w
-
-  def attn_matrices(self, p_w, input_len, batch_size):
-    """
-    Create column-wise and row-wise softmax, masking 0
-    Based on https://arxiv.org/abs/1607.04423
-    """
-    # Softmax over 2nd dim
-    rows = tf.nn.softmax(p_w, dim=1)
-    # Softmax over 3rd dim
-    cols = tf.nn.softmax(p_w, dim=2)
-
-    return rows, cols
-
   def get_logits(self, col_attn, row_attn):
     """
     Simply concat the attn matrices and connect to output
@@ -338,35 +336,6 @@ class PairWiseAttn(RNN_base):
     self.concat = self.flat_concat(col_attn, row_attn)
     in_dim = hp.max_seq_len**2*2
     logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
-    return logits
-
-class StackedAttn(PairWiseAttn):
-  pass
-
-class NoAttn(RNN_base):
-  """
-  Run the experiment using the mean of the encoded states. We want to see
-  if the results are the same as the previous LSTM experiment
-
-  Model details:
-    LSTM units: 300 (same as embedding size)
-    pooling: Take mean of all timestep hidden layers to get h_T
-    FC over pooled
-    (see the ACL 2016 paper for details)
-  """
-  def __init__(self, params, embedding, fc_layer=True):
-    super().__init__(params, embedding)
-
-  # Override logits function
-  def get_logits(self, col_attn, row_attn):
-    out = tf.reduce_mean(self.encoded_outputs, axis=1)
-
-    in_dim = self.encoder_h_size
-    # out = dense(mean, in_dim, hp.fc_units, act=tf.nn.relu, scope="h")
-    out = tf.nn.dropout(out, self.keep_prob)
-
-    # Output layer
-    logits = dense(out, in_dim, hp.num_classes, act=None, scope="class_log")
     return logits
 
 class AttnAttn(PairWiseAttn):
@@ -377,7 +346,9 @@ class AttnAttn(PairWiseAttn):
   def __init__(self, params, embedding, fc_layer=True):
     super().__init__(params, embedding)
 
-  # Override logits function
+    # Override logits method
+    self.logits = self.get_logits(self.col_attn,self.row_attn)
+
   def get_logits(self, col_attn, row_attn):
     # Get attn over attn
     self.attn_over_attn = self.attn_attn(col_attn, row_attn)
@@ -409,6 +380,59 @@ class AttnAttn(PairWiseAttn):
 
     # Attn-over-attn -> a dot product between column average vector and
     # column-wise softmax matrix. Result is a single vector [sequence len]
+    # per sample
+    attnattn = tf.einsum('ajk,ak->aj',col_attn,col_av)
+    return attnattn
+
+class AttnAttnSum(RNN_base):
+  """
+  Self-attention-over-attention for weighted sum of encoded input
+  """
+  def __init__(self, params, embedding, fc_layer=True):
+    super().__init__(params, embedding)
+
+    # Override logits method
+    self.logits = self.get_sum_logits(self.col_attn,self.row_attn)
+
+  # Override logits function
+  def get_sum_logits(self, col_attn, row_attn):
+    # Get attn over attn vector
+    self.attn_over_attn = self.attn_attn(col_attn, row_attn)
+
+    # Multiply the attention vector by encoded outputs (broadcast) and sum across time
+    if hp.parallel==False:
+      self.attn_over_attn = tf.einsum('ajk,aj->ak',self.encoded_outputs,self.attn_over_attn)
+    else:
+      self.attn_over_attn  = tf.einsum('ajk,aj->ak',self.encoded_outputs_emb,self.attn_over_attn)
+
+    # FC layer before output
+    in_dim = self.encoder_h_size
+    attnattn = dense(self.attn_over_attn, in_dim, hp.fc_units, act=tf.nn.relu, scope="h_sum")
+    attnattn = tf.nn.dropout(attnattn, self.keep_prob)
+
+    in_dim=hp.fc_units
+    # Optional fc layer
+    for i in range(hp.h_layers):
+      name = "dense_sum{}".format(i)
+      attnattn = dense(attnattn, in_dim, hp.fc_units,act=tf.nn.relu,scope=name)
+      attnattn = tf.nn.dropout(attnattn, self.keep_prob)
+      in_dim=hp.fc_units
+
+    # Output layer
+    logits = dense(attnattn, in_dim, hp.num_classes, act=None, scope="class_log_sum")
+    return logits
+
+  def attn_attn(self, col_attn, row_attn):
+    """
+    Average the softmax matrices
+    """
+    # For the row-wise softmax tensor, we want column-wise average -> dim 1
+    # This results in a vector shape [sequence len]
+    col_av = tf.reduce_mean(row_attn, axis=1)
+
+    # Attn-over-attn -> a dot product between column average vector and
+    # column-wise softmax matrix. Result is a single vector [sequence len]
+    # per sample
     attnattn = tf.einsum('ajk,ak->aj',col_attn,col_av)
     return attnattn
 

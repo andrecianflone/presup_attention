@@ -131,6 +131,7 @@ class HParams():
     # Hyperparams
     add('--emb_trainable', action='store_true', default=False)
     add('--birnn', action='store_true', default=False)
+    add('--parallel', action='store_true', default=False)
     add('--batch_size', type=int, default=64)
     add('--max_seq_len', type=int, default=60)
     add('--max_epochs', type=int, default= 50)
