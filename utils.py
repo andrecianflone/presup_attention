@@ -134,7 +134,7 @@ class HParams():
     add('--parallel', action='store_true', default=False)
     add('--batch_size', type=int, default=64)
     add('--max_seq_len', type=int, default=60)
-    add('--max_epochs', type=int, default= 50)
+    add('--max_epochs', type=int, default= 100)
     add('--early_stop', type=int, default= 10)
     add('--rnn_in_keep_prob', type=float, default=1.0)
     add('--word_gate', action='store_true', default=False)

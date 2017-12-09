@@ -338,7 +338,7 @@ class PairWiseAttn(RNN_base):
     logits = dense(self.concat, in_dim, hp.num_classes, act=None, scope="class_log")
     return logits
 
-class AttnAttn(PairWiseAttn):
+class AttnAttn(RNN_base):
   """
   Attn over attn, based mostly on https://arxiv.org/pdf/1607.04423.pdf,
   except for final layer which is fully connected to number of classes

@@ -62,11 +62,12 @@ RNN only    | cell_units | 300    | 4       | 83.15   | 81.16    | 34
 AttnAttnSum | cell_units | 300    | 5       | 82.80   | 81.45    | 16
 
 Multi param
-Model    | param/value                                                            | command | val acc | test acc | epoch
----------|------------------------------------------------------------------------|---------|---------|----------|
-AttnAttn | cell units/256, in keep prob/0.5, word gate/True                       | 1       | 81.43   | 80.12    | 17
-AttnAttn | cell units/256, in keep prob/0.5, word gate/True, emb_trainable/true   | 2       | 83.48   | 70.06    | 2
-AttnAttn | cell units/256, in keep prob/0.5, word gate/True , same random for unk | 1       | 80.08   | 78.20    | 23
+Model       | param/value                                                            | command | val acc | test acc | epoch
+------------|------------------------------------------------------------------------|---------|---------|----------|
+AttnAttn    | cell units/256, in keep prob/0.5, word gate/True                       | 1       | 81.43   | 80.12    | 17
+AttnAttn    | cell units/256, in keep prob/0.5, word gate/True, emb_trainable/true   | 2       | 83.48   | 70.06    | 2
+AttnAttn    | cell units/256, in keep prob/0.5, word gate/True , same random for unk | 1       | 80.08   | 78.20    | 23
+AttnAttnSum | cell units/150, parallel                                               | 6       | 82.56   | 81.26    | 44
 
 Command:
 1: python main.py --cell_units 256 --rnn_in_keep_prob 0.5 --word_gate --ckpt_name also_word_fix_proc
@@ -74,6 +75,7 @@ Command:
 3: python main.py --model NoAttn --ckpt_name also_noattn
 4: python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --model RNN_base --ckpt_name also_uni_rnn
 5: python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --model AttnAttnSum --ckpt_name also_uni_attnattnsum
+6: python  main.py --cell_units 150 --rnn_in_keep_prob 0.5 --model AttnAttnSum --parallel --ckpt_name also_uni_attnattnsum_parallel
 
 #### OLD
 AttnAttn  | RNN units       | 256    | 78.79 | 78.68 | 3
