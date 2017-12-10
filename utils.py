@@ -251,9 +251,13 @@ def load_model(sess, emb, hp, postag_size):
   tar.extractall()
 
   # Get params
+  postags = hp.postags
+  parallel = hp.parallel
   hp = pickle.load(open(hparams.name, "rb"))
   hp.update('ckpt_dir', dirt)
   hp.update('name', name)
+  hp.update('postags', postags)
+  hp.update('parallel', parallel)
 
   # Get previous results
   result = pickle.load(open(result.name, "rb"))
@@ -261,7 +265,7 @@ def load_model(sess, emb, hp, postag_size):
 
   # Restore model
   model = locate("model." + hp.model)
-  model = model(hp, emb)
+  model = model(hp, emb, postag_size)
   tf.global_variables_initializer().run()
 
   # Restore variables

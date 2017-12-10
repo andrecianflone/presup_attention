@@ -76,10 +76,12 @@ def call_model(sess, model, batch, fetch, keep_prob, rnn_in_keep_prob, mode):
            model.rnn_in_keep_prob : rnn_in_keep_prob,
            model.mode             : mode, # 1 for train, 0 for testing
            model.inputs           : x,
-           model.postags          : x_tags,
+           # model.postags          : x_tags,
            model.input_len        : x_len,
            model.labels           : y
          }
+  # if hasattr(model, 'postags'):
+    # feed[model.postags] = x_tags
 
   result = sess.run(fetch,feed)
   return result
