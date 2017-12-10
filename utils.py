@@ -79,7 +79,7 @@ def seq_length(sequence):
   length = tf.cast(length, tf.int32)
   return length
 
-def make_batches(x, x_len, y, batch_size, shuffle=True, seed=0):
+def make_batches(x, postags, x_len, y, batch_size, shuffle=True, seed=0):
   """ Yields the data object with all properties sliced """
   y = one_hot(y)
   data_size = len(x)
@@ -92,7 +92,7 @@ def make_batches(x, x_len, y, batch_size, shuffle=True, seed=0):
     start_index = batch_num * batch_size
     end_index = min((batch_num + 1) * batch_size, data_size)
     new_indices = indices[start_index:end_index]
-    yield (x[new_indices], x_len[new_indices], y[new_indices])
+    yield (x[new_indices], postags[new_indices], x_len[new_indices], y[new_indices])
 
 def calc_num_batches(x, batch_size):
   """ Return number of batches for this set """
@@ -132,6 +132,7 @@ class HParams():
     add('--emb_trainable', action='store_true', default=False)
     add('--birnn', action='store_true', default=False)
     add('--parallel', action='store_true', default=False)
+    add('--postags', action='store_true', default=False) # Add POS tags to network
     add('--batch_size', type=int, default=64)
     add('--max_seq_len', type=int, default=60)
     add('--max_epochs', type=int, default= 100)
@@ -213,7 +214,7 @@ def save_model(sess, saver, hp, result, step, if_global_best=1):
   os.remove(ckpt_file) if os.path.exists(ckpt_file) else None
   tar.close()
 
-def data_info(emb,word_idx_map,data):
+def data_info(emb,word_idx_map):
   # Create inverse vocab, mapping integer to word
   inv_vocab = {}
   for k,v in word_idx_map.items():
@@ -225,14 +226,14 @@ def data_info(emb,word_idx_map,data):
 
   return inv_vocab
 
-def load_model(sess, emb, hp):
+def load_model(sess, emb, hp, postag_size):
   """ Returns new model or presaved model depending on hyperparams"""
   dirt, name, load_saved = hp.ckpt_dir, hp.ckpt_name, hp.load_saved
 
   # If new, returns new model
   if load_saved == False:
     model = locate("model." + hp.model)
-    model = model(hp, emb)
+    model = model(hp, emb, postag_size)
     saver = tf.train.Saver()
     tf.global_variables_initializer().run()
     print("New model initialized")

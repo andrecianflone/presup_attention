@@ -11,7 +11,7 @@ class RNN_base():
   """
   Base RNN model
   """
-  def __init__(self,params, embedding):
+  def __init__(self,params, embedding, postag_size):
     """
     Args:
       params: hyper param instance
@@ -28,13 +28,15 @@ class RNN_base():
     self.keep_prob = tf.placeholder(floatX)
     self.rnn_in_keep_prob  = tf.placeholder(floatX)
     self.mode = tf.placeholder(tf.bool, name="mode") # 1 stands for training
-    self.vocab_size, self.emb_size = embedding.shape
+    self.vocab_size, _ = embedding.shape
     # Embedding tensor is of shape [vocab_size x embedding_size]
     self.embedding_tensor = self.embedding_setup(embedding, hp.emb_trainable)
 
     # RNN inputs
     self.inputs = tf.placeholder(intX, shape=[None, hp.max_seq_len])
-    self.embedded = self.embedded(self.inputs, self.embedding_tensor)
+    self.postags = tf.placeholder(intX, shape=[None, hp.max_seq_len])
+    self.embedded = self.embedded(self.inputs, self.postags, postag_size, self.embedding_tensor)
+    self.emb_size = self.embedded.shape[2].value
     # self.embedded = tf.layers.batch_normalization(embedded, training=self.mode)
     self.input_len = tf.placeholder(intX, shape=[None,])
 
@@ -114,7 +116,7 @@ class RNN_base():
     gated = tf.reshape(gated, enc_shape)
     return gated
 
-  def embedded(self, word_ids, embedding_tensor, scope="embedding"):
+  def embedded(self, word_ids, postags, postag_size, embedding_tensor, scope="embedding"):
     """Swap ints for dense embeddings, on cpu.
     word_ids correspond the proper row index of the embedding_tensor
 
@@ -128,6 +130,11 @@ class RNN_base():
     with tf.variable_scope(scope):
       with tf.device("/cpu:0"):
         inputs = tf.nn.embedding_lookup(embedding_tensor, word_ids)
+
+    # Maybe concat word embeddings with one-hot pos tags
+    if hp.postags:
+      tags = tf.one_hot(postags, postag_size)
+      inputs = tf.concat([inputs, tags], axis=2)
     return inputs
 
   def embedding_setup(self, embedding, emb_trainable):
@@ -314,8 +321,8 @@ class RNN_base():
 
 class PairWiseAttn(RNN_base):
   """ Pair-wise Attn """
-  def __init__(self,params, embedding):
-    super().__init__(params, embedding)
+  def __init__(self,params, embedding, postag_size):
+    super().__init__(params, embedding, postag_size)
 
     # Override logits method
     self.logits = self.get_logits(self.col_attn,self.row_attn)
@@ -343,8 +350,8 @@ class AttnAttn(RNN_base):
   Attn over attn, based mostly on https://arxiv.org/pdf/1607.04423.pdf,
   except for final layer which is fully connected to number of classes
   """
-  def __init__(self, params, embedding, fc_layer=True):
-    super().__init__(params, embedding)
+  def __init__(self, params, embedding, postag_size, fc_layer=True):
+    super().__init__(params, embedding, postag_size)
 
     # Override logits method
     self.logits = self.get_logits(self.col_attn,self.row_attn)
@@ -388,8 +395,8 @@ class AttnAttnSum(RNN_base):
   """
   Self-attention-over-attention for weighted sum of encoded input
   """
-  def __init__(self, params, embedding, fc_layer=True):
-    super().__init__(params, embedding)
+  def __init__(self, params, embedding, postag_size, fc_layer=True):
+    super().__init__(params, embedding, postag_size)
 
     # Override logits method
     self.logits = self.get_sum_logits(self.col_attn,self.row_attn)
@@ -441,8 +448,8 @@ class ConvAttn(PairWiseAttn):
   Given pair-wise matching score tensors, we convolve over them. Intuition
   is to detect clusters of local attention
   """
-  def __init__(self, params, embedding, fc_layer=True):
-    super().__init__(params, embedding)
+  def __init__(self, params, embedding, postag_size, fc_layer=True):
+    super().__init__(params, embedding, postag_size)
 
   # Override logits function
   def get_logits(self, col_attn, row_attn):
@@ -503,8 +510,8 @@ class ConvAttn2(PairWiseAttn):
   Given pair-wise matching score tensors, we convolve over them. Intuition
   is to detect clusters of local attention
   """
-  def __init__(self, params, embedding, fc_layer=True):
-    super().__init__(params, embedding)
+  def __init__(self, params, embedding, postag_size, fc_layer=True):
+    super().__init__(params, embedding, postag_size)
 
   # Override logits function
   def get_logits(self, col_attn, row_attn):

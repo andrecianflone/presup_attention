@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # np.random.seed(seed=random_seed)
 
 def train_model(params, sess, saver, model, result, data):
-  trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY = data
+  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen, teY = data
   global hp
   hp = params
   if result is not None:
@@ -26,19 +26,19 @@ def train_model(params, sess, saver, model, result, data):
   # Begin training and occasional validation
   for epoch in range(epoch, epoch+hp.max_epochs):
     prog.epoch_start()
-    for batch in make_batches(trX, trXlen, trY, hp.batch_size,
+    for batch in make_batches(trX, trXTags, trXlen, trY, hp.batch_size,
                                                   shuffle=True, seed=epoch):
       fetch = [model.optimize, model.cost, model.global_step]
       _, cost, step = call_model(\
           sess, model, batch, fetch, hp.keep_prob, hp.rnn_in_keep_prob, mode=1)
       prog.print_train(cost)
       if step%hp.eval_every==0:
-        va_acc = accuracy(sess, vaX, vaXlen, vaY, model)
+        va_acc = accuracy(sess, vaX, vaXTags, vaXlen, vaY, model)
         # If best!
         if va_acc>best_acc:
           best_acc = va_acc
           best_epoch = epoch
-          te_acc = accuracy(sess, teX, teXlen, teY, model)
+          te_acc = accuracy(sess, teX, teXTags, teXlen, teY, model)
           result = {'va_acc':va_acc, 'te_acc':te_acc, 'epoch':epoch}
           save_model(sess, saver, hp, result, step, if_global_best=1)
           prog.test_best_val(te_acc)
@@ -48,13 +48,13 @@ def train_model(params, sess, saver, model, result, data):
   prog.train_end()
   print('Best epoch {}, acc: {}'.format(best_epoch+1, best_acc))
 
-def accuracy(sess, teX, teXlen, teY, model):
+def accuracy(sess, teX, teXTags, teXlen, teY, model):
   """ Return accuracy """
   fetch = [model.batch_size, model.cost, model.y_pred, model.y_true]
   y_pred = np.zeros(teX.shape[0])
   y_true = np.zeros(teX.shape[0])
   start_id = 0
-  for batch in make_batches(teX, teXlen, teY, hp.batch_size, shuffle=False):
+  for batch in make_batches(teX, teXTags, teXlen, teY, hp.batch_size, shuffle=False):
     result = call_model(sess, model, batch, fetch, 1, 1, mode=0)
     batch_size                           = result[0]
     cost                                 = result[1]
@@ -68,13 +68,15 @@ def accuracy(sess, teX, teXlen, teY, model):
 def call_model(sess, model, batch, fetch, keep_prob, rnn_in_keep_prob, mode):
   """ Calls models and yields results per batch """
   x     = batch[0]
-  x_len = batch[1]
-  y     = batch[2]
+  x_tags= batch[1]
+  x_len = batch[2]
+  y     = batch[3]
   feed = {
            model.keep_prob        : keep_prob,
            model.rnn_in_keep_prob : rnn_in_keep_prob,
            model.mode             : mode, # 1 for train, 0 for testing
            model.inputs           : x,
+           model.postags          : x_tags,
            model.input_len        : x_len,
            model.labels           : y
          }
@@ -101,11 +103,11 @@ def chart_sent(sent, attn, y_pred, y_true):
 
 def examine_attn(hp, sess, model, vocab, inv_vocab, data):
   fetch = [model.col_attn, model.row_attn, model.attn_over_attn, model.y_pred, model.y_true]
-  trX, trXlen, trY, vaX, vaXlen, vaY, teX, teXlen, teY = data
+  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen, teY = data
   # Grab a random sample
   rand = np.random.randint(len(teX))
   y = one_hot(teY)
-  sample = (teX[rand:rand+2], teXlen[rand:rand+2], y[rand:rand+2])
+  sample = (teX[rand:rand+2], teXTags[rand:rand+2], teXlen[rand:rand+2], y[rand:rand+2])
   # sample = (np.expand_dims(teX[rand], axis=0),
             # np.expand_dims(teXlen[rand], axis=0),
             # np.expand_dims(one_hot(teY[rand]),axis=0)

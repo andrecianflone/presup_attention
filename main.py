@@ -29,14 +29,15 @@ if __name__=="__main__":
   mode = hp.mode
 
   # Get data
-  emb, word_idx_map, data = load_data(hp.data_dir, hp.pickle, tagged=False)
+  emb, word_idx_map, data, postag_size = load_data(hp.data_dir, hp.pickle, tagged=hp.postags)
 
-  inv_vocab =  data_info(emb,word_idx_map,data)
+  # Inverse vocab
+  inv_vocab =  data_info(emb,word_idx_map)
 
   # Start tf session
   with tf.Graph().as_default(), tf.Session() as sess:
     # Get the model
-    model, saver, hp, result = load_model(sess, emb, hp)
+    model, saver, hp, result = load_model(sess, emb, hp, postag_size)
 
     # Check the params
     print(hp)
