@@ -48,8 +48,12 @@ if __name__=="__main__":
       train_model(hp, sess, saver, model, result, data)
     else:
       for i in range(10):
+<<<<<<< HEAD
         name = str(i) + '.png'
         examine_attn(hp, sess, model, word_idx_map, inv_vocab, data, name)
+=======
+        examine_attn(hp, sess, model, word_idx_map, inv_vocab, data)
+>>>>>>> 2b7b480ab2f0449fc7cf56d86e390dbf3e5f510e
     pass
 
 

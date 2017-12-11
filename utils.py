@@ -251,13 +251,13 @@ def load_model(sess, emb, hp, postag_size):
   tar.extractall()
 
   # Get params
-  postags = hp.postags
-  parallel = hp.parallel
+  # postags = hp.postags
+  # parallel = hp.parallel
   hp = pickle.load(open(hparams.name, "rb"))
   hp.update('ckpt_dir', dirt)
   hp.update('name', name)
-  hp.update('postags', postags)
-  hp.update('parallel', parallel)
+  # hp.update('postags', postags)
+  # hp.update('parallel', parallel)
 
   # Get previous results
   result = pickle.load(open(result.name, "rb"))
