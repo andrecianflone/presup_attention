@@ -5,6 +5,8 @@ from utils import Progress, make_batches, calc_num_batches, save_model, load_mod
 import numpy as np
 from pydoc import locate
 from sklearn.metrics import accuracy_score
+import matplotlib
+matplotlib.use('Agg') # for savefig
 import matplotlib.pyplot as plt
 # np.random.seed(seed=random_seed)
 
@@ -76,7 +78,7 @@ def call_model(sess, model, batch, fetch, keep_prob, rnn_in_keep_prob, mode):
            model.rnn_in_keep_prob : rnn_in_keep_prob,
            model.mode             : mode, # 1 for train, 0 for testing
            model.inputs           : x,
-           # model.postags          : x_tags,
+           model.postags          : x_tags,
            model.input_len        : x_len,
            model.labels           : y
          }
@@ -92,7 +94,7 @@ def sample_to_sent(x, inv_vocab):
   sample = [inv_vocab[w] for w in x]
   return sample
 
-def chart_sent(sent, attn, y_pred, y_true):
+def chart_sent(sent, attn, y_pred, y_true, name):
   """ Bar charts the attention with words in `sent` as x tick labels """
   x = np.arange(len(sent))
   plt.bar(x, attn, width=1)
@@ -101,9 +103,10 @@ def chart_sent(sent, attn, y_pred, y_true):
   plt.xlabel(label, fontsize=14)
   plt.margins(0.2)
   plt.subplots_adjust(bottom=0.15)
-  plt.show()
+  plt.savefig(name)
+  # plt.show()
 
-def examine_attn(hp, sess, model, vocab, inv_vocab, data):
+def examine_attn(hp, sess, model, vocab, inv_vocab, data, name):
   fetch = [model.col_attn, model.row_attn, model.attn_over_attn, model.y_pred, model.y_true]
   trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen, teY = data
   # Grab a random sample
@@ -118,6 +121,6 @@ def examine_attn(hp, sess, model, vocab, inv_vocab, data):
                             call_model(sess, model, sample, fetch, 1, 1, mode=0)
   # Parse sample to text
   sent = sample_to_sent(sample[0][0], inv_vocab)
-  chart_sent(sent, aoa[0], y_pred[0], y_true[0])
+  chart_sent(sent, aoa[0], y_pred[0], y_true[0], name)
   print(sent)
   pass

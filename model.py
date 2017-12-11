@@ -408,13 +408,13 @@ class AttnAttnSum(RNN_base):
 
     # Multiply the attention vector by encoded outputs (broadcast) and sum across time
     if hp.parallel==False:
-      self.attn_over_attn = tf.einsum('ajk,aj->ak',self.encoded_outputs,self.attn_over_attn)
+      self.weighted_encoded = tf.einsum('ajk,aj->ak',self.encoded_outputs,self.attn_over_attn)
     else:
-      self.attn_over_attn  = tf.einsum('ajk,aj->ak',self.encoded_outputs_emb,self.attn_over_attn)
+      self.weighted_encoded = tf.einsum('ajk,aj->ak',self.encoded_outputs_emb,self.attn_over_attn)
 
     # FC layer before output
     in_dim = self.encoder_h_size
-    attnattn = dense(self.attn_over_attn, in_dim, hp.fc_units, act=tf.nn.relu, scope="h_sum")
+    attnattn = dense(self.weighted_encoded, in_dim, hp.fc_units, act=tf.nn.relu, scope="h_sum")
     attnattn = tf.nn.dropout(attnattn, self.keep_prob)
 
     in_dim=hp.fc_units
