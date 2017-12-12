@@ -5,6 +5,8 @@ from utils import Progress, make_batches, calc_num_batches, save_model, load_mod
 import numpy as np
 from pydoc import locate
 from sklearn.metrics import accuracy_score
+import matplotlib
+matplotlib.use('Agg') # for savefig
 import matplotlib.pyplot as plt
 # np.random.seed(seed=random_seed)
 
@@ -101,7 +103,8 @@ def vert_bar_chart(sent, attn, y_pred, y_true):
   plt.xlabel(label, fontsize=14)
   plt.margins(0.2)
   plt.subplots_adjust(bottom=0.15)
-  plt.show()
+  plt.savefig(name)
+  # plt.show()
 
 def vert_bar_chart(sent, attn, y_pred, y_true):
   """ Horizontal bar chart """

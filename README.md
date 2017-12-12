@@ -69,7 +69,8 @@ AttnAttn    | cell units/256, in keep prob/0.5, word gate/True, emb_trainable/tr
 AttnAttn    | cell units/256, in keep prob/0.5, word gate/True , same random for unk | 1       | 80.08   | 78.20    | 23
 AttnAttnSum | cell units/150, parallel                                               | 6       | 82.56   | 81.26    | 44
 AttnAttnSum | birnn, cell_units 150                                                  | 7       | 83.24   | 81.46    | 52
-RNN only  | cell_units 300, postags | 8 |82.94|81.81|24
+RNN only    | cell_units 300, postags                                                | 8       | 82.94   | 81.81    | 24
+AttnAttnSum | birnn, cell_units 300, word gate, pos                                  | 9       | 83.40   | 82.19    | 20
 
 Command:
 1: python main.py --cell_units 256 --rnn_in_keep_prob 0.5 --word_gate --ckpt_name also_word_fix_proc
@@ -80,6 +81,8 @@ Command:
 6: python  main.py --cell_units 150 --rnn_in_keep_prob 0.5 --model AttnAttnSum --parallel --ckpt_name also_uni_attnattnsum_parallel
 7: python main.py --cell_units 150 --birnn --rnn_in_keep_prob 0.5 --model AttnAttnSum --ckpt_name also_bi_attnattnsum
 8: python main.py --cell_units 300 --postags --rnn_in_keep_prob 0.5 --model RNN_base --ckpt_name also_uni_rnn_pos
+9: python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --birnn --word_gate --postags --model AttnAttnSum --ckpt_name also_bi_300_word_pos_attnattnsum
+10: python main.py --cell_units 150 --rnn_in_keep_prob 0.5 --birnn --word_gate --postags --model AttnAttnSum --ckpt_name also_bi_word_pos_attnattnsum
 
 #### OLD
 AttnAttn  | RNN units       | 256    | 78.79 | 78.68 | 3

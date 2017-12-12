@@ -48,7 +48,8 @@ if __name__=="__main__":
       train_model(hp, sess, saver, model, result, data)
     else:
       for i in range(10):
-        examine_attn(hp, sess, model, word_idx_map, inv_vocab, data)
+        name = str(i) + '.png'
+        examine_attn(hp, sess, model, word_idx_map, inv_vocab, data, name)
     pass
 
 
