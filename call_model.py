@@ -92,7 +92,7 @@ def sample_to_sent(x, inv_vocab):
   sample = [inv_vocab[w] for w in x]
   return sample
 
-def chart_sent(sent, attn, y_pred, y_true):
+def vert_bar_chart(sent, attn, y_pred, y_true):
   """ Bar charts the attention with words in `sent` as x tick labels """
   x = np.arange(len(sent))
   plt.bar(x, attn, width=1)
@@ -102,6 +102,21 @@ def chart_sent(sent, attn, y_pred, y_true):
   plt.margins(0.2)
   plt.subplots_adjust(bottom=0.15)
   plt.show()
+
+def vert_bar_chart(sent, attn, y_pred, y_true):
+  """ Horizontal bar chart """
+  plt.rcdefaults()
+  fig, ax = plt.subplots()
+
+  y_pos = np.arange(len(sent))
+  ax.barh(y_pos, attn, align='center', color='grey')
+  ax.set_yticks(y_pos)
+  ax.set_yticklabels(sent)
+  ax.invert_yaxis()  # labels read top-to-bottom
+  label = 'prediction: {}, true: {}'.format(y_pred, y_true)
+  ax.set_xlabel(label)
+  plt.show()
+  plt.clf()
 
 def examine_attn(hp, sess, model, vocab, inv_vocab, data):
   fetch = [model.col_attn, model.row_attn, model.attn_over_attn, model.y_pred, model.y_true]
@@ -118,6 +133,6 @@ def examine_attn(hp, sess, model, vocab, inv_vocab, data):
                             call_model(sess, model, sample, fetch, 1, 1, mode=0)
   # Parse sample to text
   sent = sample_to_sent(sample[0][0], inv_vocab)
-  chart_sent(sent, aoa[0], y_pred[0], y_true[0])
+  vert_bar_chart(sent, aoa[0], y_pred[0], y_true[0])
   print(sent)
   pass
