@@ -94,7 +94,7 @@ def sample_to_sent(x, inv_vocab):
   sample = [inv_vocab[w] for w in x]
   return sample
 
-def vert_bar_chart(sent, attn, y_pred, y_true):
+def vert_bar_chart(sent, attn, y_pred, y_true, name):
   """ Bar charts the attention with words in `sent` as x tick labels """
   x = np.arange(len(sent))
   plt.bar(x, attn, width=1)
@@ -105,12 +105,12 @@ def vert_bar_chart(sent, attn, y_pred, y_true):
   plt.subplots_adjust(bottom=0.15)
   plt.savefig(name)
   # plt.show()
+  plt.clf()
 
-def vert_bar_chart(sent, attn, y_pred, y_true):
+def vert_bar_chart(sent, attn, y_pred, y_true, name):
   """ Horizontal bar chart """
   plt.rcdefaults()
   fig, ax = plt.subplots()
-
   y_pos = np.arange(len(sent))
   ax.barh(y_pos, attn, align='center', color='grey')
   ax.set_yticks(y_pos)
@@ -118,10 +118,11 @@ def vert_bar_chart(sent, attn, y_pred, y_true):
   ax.invert_yaxis()  # labels read top-to-bottom
   label = 'prediction: {}, true: {}'.format(y_pred, y_true)
   ax.set_xlabel(label)
-  plt.show()
+  plt.savefig(name)
+  # plt.show()
   plt.clf()
 
-def examine_attn(hp, sess, model, vocab, inv_vocab, data):
+def examine_attn(hp, sess, model, vocab, inv_vocab, data, name):
   fetch = [model.col_attn, model.row_attn, model.attn_over_attn, model.y_pred, model.y_true]
   trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen, teY = data
   # Grab a random sample
@@ -136,6 +137,6 @@ def examine_attn(hp, sess, model, vocab, inv_vocab, data):
                             call_model(sess, model, sample, fetch, 1, 1, mode=0)
   # Parse sample to text
   sent = sample_to_sent(sample[0][0], inv_vocab)
-  vert_bar_chart(sent, aoa[0], y_pred[0], y_true[0])
+  vert_bar_chart(sent, aoa[0], y_pred[0], y_true[0], name)
   print(sent)
   pass
