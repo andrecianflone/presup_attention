@@ -220,9 +220,9 @@ def data_info(emb,word_idx_map):
   for k,v in word_idx_map.items():
     inv_vocab[v] = k
 
-  unk_idx = 112368
-  unk_emb = emb[112368]
-  unk_emb2 = emb[143661]
+  # unk_idx = 112368
+  # unk_emb = emb[112368]
+  # unk_emb2 = emb[143661]
 
   return inv_vocab
 
@@ -282,4 +282,31 @@ def load_model(sess, emb, hp, postag_size):
   tar.close()
 
   return model, saver, hp, result
+
+def prf1(test, gold):
+  '''
+  N.B.: This function comes from Yulan Feng
+  test: a numpy array of labels
+  gold: a numpy array of labels with the same length as test
+  '''
+  #print '---'
+  prf1_dict = {}
+  # return P, R, F1 for each of the three classes
+  for val in xrange(2):
+    # precision: restrict gold to those cases where system predicts val
+    pmask = (test == val)
+    arr = gold[pmask]
+    pnumer = np.sum(arr == val)
+    pdenom = len(arr)
+    p = pnumer / float(pdenom)
+    # recall: restrict test to those cases where gold label is val
+    rmask = (gold == val)
+    arr = test[rmask]
+    rnumer = np.sum(arr == val)
+    rdenom = len(arr)
+    r = rnumer / float(rdenom)
+    f1 = 2 * p * r / (p + r)
+    prf1_dict[val] = (p, r, f1)
+  return prf1_dict
+
 

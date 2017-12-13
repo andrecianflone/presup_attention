@@ -8,10 +8,12 @@ from sklearn.metrics import accuracy_score
 import matplotlib
 matplotlib.use('Agg') # for savefig
 import matplotlib.pyplot as plt
+import sys
 # np.random.seed(seed=random_seed)
 
 def train_model(params, sess, saver, model, result, data):
-  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen, teY = data
+  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen,\
+                                                          teY, teYActual = data
   global hp
   hp = params
   if result is not None:
@@ -94,7 +96,7 @@ def sample_to_sent(x, inv_vocab):
   sample = [inv_vocab[w] for w in x]
   return sample
 
-def vert_bar_chart(sent, attn, y_pred, y_true, name):
+def hor_bar_chart(sent, attn, y_pred, y_true, name):
   """ Bar charts the attention with words in `sent` as x tick labels """
   x = np.arange(len(sent))
   plt.bar(x, attn, width=1)
@@ -109,8 +111,13 @@ def vert_bar_chart(sent, attn, y_pred, y_true, name):
 
 def vert_bar_chart(sent, attn, y_pred, y_true, name):
   """ Horizontal bar chart """
-  plt.rcdefaults()
+  # plt.rcdefaults()
+  # Figsize is in inches, assuming dpi 80
+  # arg is (width, height)
+  # fig, ax = plt.subplots(figsize=(5,30))
   fig, ax = plt.subplots()
+  fig.set_size_inches(10, 20)
+  # plt.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=0.1)
   y_pos = np.arange(len(sent))
   ax.barh(y_pos, attn, align='center', color='grey')
   ax.set_yticks(y_pos)
@@ -124,7 +131,8 @@ def vert_bar_chart(sent, attn, y_pred, y_true, name):
 
 def examine_attn(hp, sess, model, vocab, inv_vocab, data, name):
   fetch = [model.col_attn, model.row_attn, model.attn_over_attn, model.y_pred, model.y_true]
-  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen, teY = data
+  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen,\
+                                                          teY, teYActual = data
   # Grab a random sample
   rand = np.random.randint(len(teX))
   y = one_hot(teY)

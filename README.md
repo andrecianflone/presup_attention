@@ -51,6 +51,27 @@ Base settings:
 
 ## Results
 
+### Dataset: PTB
+Multi param
+Model       | param/value               | command | val acc | test acc | epoch
+------------|---------------------------|---------|---------|----------|
+RNN only    | cell_units 64, unidirect  | 1       | 78.93   | 66.94    | 9
+RNN only    | cell_units 128, unidirect | 2       | 80.31   | 71.93    | 12
+RNN only    | cell_units 200, unidirect | 3       | 80.69   | 73.18    | 9
+RNN only    | cell_units 300, unidirect | 4       | 81.27   | 73.18    | 11
+RNN only    | cell_units 150, bidirect  | 5       | 80.69   | 68.61    | 14
+AttnAttnSum | cell_units, 300           | 6       | 81.47  | 75.05   | 18
+RNN only 72.56, 73.39
+AttnAttnSum 71.93, 71.73, 72.77
+
+Command:
+1: python main.py --data_dir ../presup_wsj/ --model RNN_base  --batch_size 32 --eval_every 20 --cell_units 64
+2: python  main.py --data_dir ../presup_wsj/ --model RNN_base  --batch_size 32 --eval_every 20 --cell_units 128
+3: python  main.py --data_dir ../presup_wsj/ --model RNN_base  --batch_size 32 --eval_every 20 --cell_units 200
+4: python  main.py --data_dir ../presup_wsj/ --model RNN_base  --batch_size 32 --eval_every 20 --cell_units 300
+5: python  main.py --data_dir ../presup_wsj/ --model RNN_base  --batch_size 32 --eval_every 20 --cell_units 150 --birnn
+6: python  main.py --data_dir ../presup_wsj/ --model AttnAttnSum  --batch_size 32 --eval_every 20 --cell_units 300
+
 ### Dataset: Giga also
 Single param variation
 Model       | param      | value  | command | val acc | test acc | epoch
