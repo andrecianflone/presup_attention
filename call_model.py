@@ -114,7 +114,6 @@ def vert_bar_chart(sent, attn, y_pred, y_true, name):
   # plt.rcdefaults()
   # Figsize is in inches, assuming dpi 80
   # arg is (width, height)
-  # fig, ax = plt.subplots(figsize=(5,30))
   fig, ax = plt.subplots()
   fig.set_size_inches(10, 20)
   # plt.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=0.1)
