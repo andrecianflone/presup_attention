@@ -8,7 +8,7 @@ import sys
 import os
 import tensorflow as tf
 import numpy as np
-from call_model import train_model, examine_attn
+from call_model import train_model, examine_attn, save_results
 from utils import HParams, load_model, data_info
 # Ugly hack: add parent as package to allow relative imports
 PACKAGE_PARENT = '..'
@@ -18,10 +18,6 @@ from CNN_sentence.CNN_sentence import load_data
 # Control repeatability
 random_seed=1
 tf.set_random_seed(random_seed)
-
-# TODO: check the embedding and integerization. Why does 'the'
-# refer to index 5273? Should be one of the first
-# TODO: Implement Batch norm mLSTM?
 
 if __name__=="__main__":
   # Get hyperparams from argparse and defaults
@@ -47,8 +43,10 @@ if __name__=="__main__":
       # Train the model!
       train_model(hp, sess, saver, model, result, data)
     else:
-      name = 'viz/' + str(i) + '.png'
-      examine_attn(hp, sess, model, word_idx_map, inv_vocab, data, name)
+      for i in range(50):
+        name = 'viz/' + str(i) + '.png'
+        examine_attn(hp, sess, model, word_idx_map, inv_vocab, data, name)
+      # save_results(sess,data,model, hp)
     pass
 
 

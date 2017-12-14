@@ -132,7 +132,7 @@ class RNN_base():
         inputs = tf.nn.embedding_lookup(embedding_tensor, word_ids)
 
     # Maybe concat word embeddings with one-hot pos tags
-    if hp.postags:
+    if hasattr(hp, 'postags') and hp.postags:
       tags = tf.one_hot(postags, postag_size)
       inputs = tf.concat([inputs, tags], axis=2)
     return inputs
@@ -407,7 +407,7 @@ class AttnAttnSum(RNN_base):
     self.attn_over_attn = self.attn_attn(col_attn, row_attn)
 
     # Multiply the attention vector by encoded outputs (broadcast) and sum across time
-    if hp.parallel==False:
+    if hasattr(hp, 'parallel') and hp.parallel==False:
       self.weighted_encoded = tf.einsum('ajk,aj->ak',self.encoded_outputs,self.attn_over_attn)
     else:
       self.weighted_encoded = tf.einsum('ajk,aj->ak',self.encoded_outputs_emb,self.attn_over_attn)

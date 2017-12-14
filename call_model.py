@@ -54,6 +54,14 @@ def train_model(params, sess, saver, model, result, data):
 
 def accuracy(sess, teX, teXTags, teXlen, teY, model):
   """ Return accuracy """
+  y_pred, y_true = get_pred_true(sess, teX, teXTags, teXlen, teY, model)
+  acc = accuracy_score(y_true, y_pred)
+  return acc
+
+def get_pred_true(sess, teX, teXTags, teXlen, teY, model):
+  """
+  Get two numpy arrays
+  """
   fetch = [model.batch_size, model.cost, model.y_pred, model.y_true]
   y_pred = np.zeros(teX.shape[0])
   y_true = np.zeros(teX.shape[0])
@@ -66,8 +74,7 @@ def accuracy(sess, teX, teXTags, teXlen, teY, model):
     y_true[start_id:start_id+batch_size] = result[3]
     start_id += batch_size
 
-  acc = accuracy_score(y_true, y_pred)
-  return acc
+  return y_pred, y_true
 
 def call_model(sess, model, batch, fetch, keep_prob, rnn_in_keep_prob, mode):
   """ Calls models and yields results per batch """
@@ -115,7 +122,7 @@ def vert_bar_chart(sent, attn, y_pred, y_true, name):
   # Figsize is in inches, assuming dpi 80
   # arg is (width, height)
   fig, ax = plt.subplots()
-  fig.set_size_inches(10, 20)
+  fig.set_size_inches(5, 20)
   # plt.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=0.1)
   y_pos = np.arange(len(sent))
   ax.barh(y_pos, attn, align='center', color='grey')
@@ -147,3 +154,24 @@ def examine_attn(hp, sess, model, vocab, inv_vocab, data, name):
   vert_bar_chart(sent, aoa[0], y_pred[0], y_true[0], name)
   print(sent)
   pass
+
+def save_results(sess, data, model, params):
+  """
+  Save results to a csv file with 3 columns:
+  | test prediction binary | true binary | true string
+  """
+  global hp
+  hp = params
+  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen,\
+                                                          teY, teYActual = data
+
+  y_pred, y_true = get_pred_true(sess, teX, teXTags, teXlen, teY, model)
+
+  with open('res.csv', 'w') as f:
+    f.write("prediction, true, actual_label\n")
+    for i, _ in enumerate(y_pred):
+      l = "{}, {}, {}\n".format(y_pred[i], y_true[i], teYActual[i])
+      f.write(l)
+
+
+
