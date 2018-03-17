@@ -7,6 +7,162 @@ import tensorflow as tf
 floatX = tf.float32
 intX = tf.int32
 
+class CNN(object):
+  """
+  Some of the code for the CNN from Denny Britz:
+  https://github.com/dennybritz/cnn-text-classification-tf/blob/master/text_cnn.py
+  """
+  def __init__(self, params, embedding, postag_size):
+
+    global hp
+    hp = params
+
+    num_classes = 2
+    vocab_size, _ = embedding.shape
+    sequence_length = hp.max_seq_len
+    filter_sizes = [3,4,5]
+    num_filters = 128
+    l2_reg_lambda=0.0
+
+    # Embedding tensor is of shape [vocab_size x embedding_size]
+    self.embedding_tensor = self.embedding_setup(embedding, hp.emb_trainable)
+
+    # helper variable to keep track of steps
+    self.global_step = tf.Variable(0, name='global_step', trainable=False)
+
+    # Placeholders for input, output and dropout
+    self.rnn_in_keep_prob  = tf.placeholder(floatX)
+    self.mode = tf.placeholder(tf.bool, name="mode") # 1 stands for training
+    self.input_len = tf.placeholder(intX, shape=[None,])
+    self.postags = tf.placeholder(intX, shape=[None, hp.max_seq_len])
+
+    self.inputs = tf.placeholder(tf.int32, [None, sequence_length], name="inputs")
+    self.labels = tf.placeholder(tf.float32, [None, num_classes], name="labels")
+    self.keep_prob = tf.placeholder(tf.float32, name="keep_prob")
+
+    self.batch_size = tf.shape(self.inputs)[0]
+
+    # Keeping track of l2 regularization loss (optional)
+    l2_loss = tf.constant(0.0)
+
+    # Embedding layer
+    self.embedded = self.embedded(self.inputs, self.postags, postag_size, self.embedding_tensor)
+    self.embedded = tf.expand_dims(self.embedded, -1)
+    self.embedding_size = self.embedded.shape[2].value
+
+    # Create a convolution + maxpool layer for each filter size
+    pooled_outputs = []
+    for i, filter_size in enumerate(filter_sizes):
+      with tf.name_scope("conv-maxpool-%s" % filter_size):
+        # Convolution Layer
+        filter_shape = [filter_size, self.embedding_size, 1, num_filters]
+        W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
+        b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
+        conv = tf.nn.conv2d(
+          self.embedded,
+          W,
+          strides=[1, 1, 1, 1],
+          padding="VALID",
+          name="conv")
+        # Apply nonlinearity
+        h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
+        # Maxpooling over the outputs
+        pooled = tf.nn.max_pool(
+          h,
+          ksize=[1, sequence_length - filter_size + 1, 1, 1],
+          strides=[1, 1, 1, 1],
+          padding='VALID',
+          name="pool")
+        pooled_outputs.append(pooled)
+
+    # Combine all the pooled features
+    num_filters_total = num_filters * len(filter_sizes)
+    self.h_pool = tf.concat(pooled_outputs, 3)
+    self.h_pool_flat = tf.reshape(self.h_pool, [-1, num_filters_total])
+
+    # Add dropout
+    with tf.name_scope("dropout"):
+      self.h_drop = tf.nn.dropout(self.h_pool_flat, self.keep_prob)
+
+    # Final (unnormalized) scores and predictions
+    with tf.name_scope("output"):
+      W = tf.get_variable(
+        "W",
+        shape=[num_filters_total, num_classes],
+        initializer=tf.contrib.layers.xavier_initializer())
+      b = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="b")
+      l2_loss += tf.nn.l2_loss(W)
+      l2_loss += tf.nn.l2_loss(b)
+      self.scores = tf.nn.xw_plus_b(self.h_drop, W, b, name="scores")
+      self.predictions = tf.argmax(self.scores, 1, name="predictions")
+
+    # Calculate mean cross-entropy loss
+    with tf.name_scope("loss"):
+      losses = tf.nn.softmax_cross_entropy_with_logits(logits=self.scores, labels=self.labels)
+      self.cost = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
+
+    # Predictions
+    self.y_prob, self.y_pred, self.y_true = self.predict(self.labels, self.scores)
+
+
+    # Optimize
+    self.optimize = self.optimize_step(self.cost,self.global_step)
+
+  def embedded(self, word_ids, postags, postag_size, embedding_tensor, scope="embedding"):
+    """Swap ints for dense embeddings, on cpu.
+    word_ids correspond the proper row index of the embedding_tensor
+
+    Args:
+      words_ids: array of [batch_size x sequence of word ids]
+      embedding_tensor: tensor from which to retrieve the embedding, word id
+        takes corresponding tensor row
+    Returns:
+      tensor of shape [batch_size, sequence length, embedding size]
+    """
+    with tf.variable_scope(scope):
+      with tf.device("/cpu:0"):
+        inputs = tf.nn.embedding_lookup(embedding_tensor, word_ids)
+
+    # Maybe concat word embeddings with one-hot pos tags
+    if hasattr(hp, 'postags') and hp.postags:
+      tags = tf.one_hot(postags, postag_size)
+      inputs = tf.concat([inputs, tags], axis=2)
+    return inputs
+
+  def embedding_setup(self, embedding, emb_trainable):
+    """ If trainable, returns variable, otherwise the original embedding """
+    if emb_trainable == True:
+      emb_variable = tf.get_variable(
+          name="embedding_matrix", shape=embedding.shape,
+          initializer = tf.constant_initializer(embedding))
+      return emb_variable
+    else:
+      return embedding
+
+  def predict(self, labels, logits):
+    """ Returns class label (int) for prediction and gold
+    Args:
+      pred_logits : predicted logits, not yet softmax
+      classes : labels as one-hot vectors
+    """
+    y_prob = tf.nn.softmax(logits)
+    y_pred = tf.argmax(y_prob, axis=1)
+    y_true = tf.argmax(labels, axis=1)
+
+    return y_prob, y_pred, y_true
+
+  def optimize_step(self, loss, glbl_step):
+    """ Locate optimizer from hp, take a step """
+    Opt = locate("tensorflow.train." + hp.optimizer)
+    if Opt is None:
+      raise ValueError("Invalid optimizer: " + hp.optimizer)
+    optimizer = Opt(hp.l_rate)
+    grads_vars = optimizer.compute_gradients(loss)
+    capped_grads = [(None if grad is None else tf.clip_by_value(grad, -1., 1.), var)\
+                                                  for grad, var in grads_vars]
+    take_step = optimizer.apply_gradients(capped_grads, global_step=glbl_step)
+    return take_step
+
 class RNN_base():
   """
   Base RNN model
@@ -91,7 +247,7 @@ class RNN_base():
     self.cost = tf.reduce_mean(self.loss) # average across batch
 
     # Predictions
-    self.y_pred, self.y_true = self.predict(self.labels, self.logits)
+    self.y_prob, self.y_pred, self.y_true = self.predict(self.labels, self.logits)
 
     # Optimize
     self.optimize = self.optimize_step(self.cost,self.global_step)
@@ -301,11 +457,11 @@ class RNN_base():
       pred_logits : predicted logits, not yet softmax
       classes : labels as one-hot vectors
     """
-    y_pred = tf.nn.softmax(logits)
-    y_pred = tf.argmax(y_pred, axis=1)
+    y_prob = tf.nn.softmax(logits)
+    y_pred = tf.argmax(y_prob, axis=1)
     y_true = tf.argmax(labels, axis=1)
 
-    return y_pred, y_true
+    return y_prob, y_pred, y_true
 
   def get_logits(self, col_attn, row_attn):
     """ Default final layer, mean-pool RNN states, no attention """

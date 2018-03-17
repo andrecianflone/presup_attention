@@ -119,14 +119,15 @@ class HParams():
 
     # General flags
     add = parser.add_argument
-    add('--data_dir', type=str, default="../presup_giga_also/")
-    add('--pickle', type=str, default="processed.pkl")
+    add('--data_dir', type=str, default="/home/rldata/new_presup_data/wsj_balanced/all/")
+    add('--pickle', type=str, default="/home/rldata/new_presup_data/wsj_balanced/all/processed.pkl")
     # add('--pickle', type=str, default="processed_singleUnk.pkl")
     add('--model', type=str, default="AttnAttn")
     add('--load_saved', action='store_true', default=False)
     add('--ckpt_dir', type=str, default='ckpt')
     add('--ckpt_name', type=str, default='ckpt')
     add('--mode', type=int, default=1, help='train: 1, test:0')
+    add('--score', type=str, default='acc', help='accuracy or f1')
 
     # Hyperparams
     add('--emb_trainable', action='store_true', default=False)
@@ -308,5 +309,30 @@ def prf1(test, gold):
     f1 = 2 * p * r / (p + r)
     prf1_dict[val] = (p, r, f1)
   return prf1_dict
+
+
+def print_info(data):
+  print("Info about the data:")
+  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen,\
+                                                          teY, teYActual = data
+  print("training set ****")
+  print("size: " + str(len(trX)))
+  print("pos: " + str(sum(trY)))
+  print("neg: " + str(len(trX) - sum(trY)))
+  print()
+
+  print("validation set ****")
+  print("size: " + str(len(vaX)))
+  print("pos: " + str(sum(vaY)))
+  print("neg: " + str(len(vaX) - sum(vaY)))
+  print()
+
+
+  print("test set ****")
+  print("size: " + str(len(teX)))
+  print("pos: " + str(sum(teY)))
+  print("neg: " + str(len(teX) - sum(teY)))
+  print()
+
 
 

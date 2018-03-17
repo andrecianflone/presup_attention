@@ -1,4 +1,218 @@
 
+
+# Sample run
+Simple example to run ptb dataset using attention model, no saving
+```
+python main.py --data_dir /home/rldata/new_presup_data/wsj_natural/ --pickle /home/ml/acianf/projects/presup/presup_wsj/processed.pkl --model AttnAttnSum --eval_every 20 --batch_size 32
+python main.py --data_dir /home/rldata/presup_data/presup_wsj/natural/ --pickle ../presup_wsj/processed.pkl --model AttnAttnSum --eval_every 20 --batch_size 32
+```
+
+# New experiments
+## Datasets:
+Following datasets are used. First line is root directory which contains train/valid/test folders. Second line is the "processed.pkl" file.
+
+WSJ Natural with balanced training
+/home/rldata/new_presup_data/wsj_natural_bal_train/
+/home/rldata/new_presup_data/wsj_balanced/all/processed.pkl
+
+Giga again
+/home/rldata/new_presup_data/giga_individual/again/
+/home/rldata/new_presup_data/giga_individual/again/train/processed.pkl
+
+Giga still
+/home/rldata/new_presup_data/giga_individual/still/
+/home/rldata/new_presup_data/giga_individual/still/train/processed.pkl
+
+Giga too
+/home/rldata/new_presup_data/giga_individual/too/
+/home/rldata/new_presup_data/giga_individual/too/train/processed.pkl
+
+Giga yet
+/home/rldata/new_presup_data/giga_individual/yet/
+/home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl
+
+Giga all balanced
+/home/rldata/new_presup_data/giga_all_balanced/
+/home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl
+
+```
+############################
+# ATTN W/ POS
+############################
+# WSJ natural distribution with balanced train
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 32 --model AttnAttnSum --ckpt_name wsj_natural --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl
+
+# Giga again
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 1000 --model AttnAttnSum --ckpt_name giga_again --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl
+
+# Giga still
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 2000 --model AttnAttnSum --ckpt_name giga_still --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl
+
+# Giga too
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 1000 --model AttnAttnSum --ckpt_name giga_too_attn_pos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl
+
+# Giga yet
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 1000 --model AttnAttnSum --ckpt_name giga_yet_attn_pos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl
+
+# Giga all balanced
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 7000 --model AttnAttnSum --ckpt_name giga_all_attn_pos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl
+############################
+# ATTN NO POS
+############################
+# WSJ natural distribution with balanced train
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 32 --model AttnAttnSum --ckpt_name wsj_natural_attn_nopos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl
+
+# Giga again
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 1000 --model AttnAttnSum --ckpt_name giga_again_attn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl
+
+# Giga still
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 2000 --model AttnAttnSum --ckpt_name giga_still_nopos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl
+
+# Giga too
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 1000 --model AttnAttnSum --ckpt_name giga_too_attn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl
+
+# Giga yet
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 1000 --model AttnAttnSum --ckpt_name giga_yet_attn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl
+
+# Giga all balanced
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 7000 --model AttnAttnSum --ckpt_name giga_all_attn_nopos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl
+############################
+# RNN W/ POS
+############################
+# WSJ natural distribution with balanced train
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 32 --model RNN_base --ckpt_name wsj_natural_rnn_pos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl
+
+# Giga again
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 1000 --model RNN_base  --ckpt_name giga_again_rnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl
+
+# Giga still
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 2000 --model RNN_base --ckpt_name giga_still_rnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl
+
+# Giga too
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 1000 --model RNN_base --ckpt_name giga_too_rnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl
+
+# Giga yet
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 1000 --model RNN_base --ckpt_name giga_yet_rnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl
+
+# Giga all balanced
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --postags --eval_every 7000 --model RNN_base  --ckpt_name giga_all_rnn_pos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl
+############################
+# RNN NO POS
+############################
+# WSJ natural distribution with balanced train
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 32 --model RNN_base --ckpt_name wsj_natural_rnn_nopos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl
+
+# Giga again
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 1000 --model RNN_base --ckpt_name giga_again_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl
+
+# Giga still
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 2000 --model RNN_base --ckpt_name giga_still_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl
+
+# Giga too
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 1000 --model RNN_base --ckpt_name giga_too_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl
+
+# Giga yet
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 1000 --model RNN_base --ckpt_name giga_yet_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl
+
+# Giga all balanced
+python main.py --cell_units 300 --rnn_in_keep_prob 0.5 --eval_every 7000 --model RNN_base  --ckpt_name giga_all_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl
+
+
+############################
+# CNN W/ POS
+############################
+# WSJ natural distribution with balanced train
+python main.py --postags --eval_every 32 --model CNN --ckpt_name wsj_natural_cnn_pos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl
+
+# Giga again
+python main.py  --postags --eval_every 1000 --model CNN --ckpt_name giga_again_cnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl
+
+# Giga still
+python main.py  --postags --eval_every 2000 --model CNN --ckpt_name giga_still_cnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl
+
+# Giga too
+python main.py  --postags --eval_every 1000 --model CNN --ckpt_name giga_too_cnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl
+
+# Giga yet
+python main.py  --postags --eval_every 1000 --model CNN --ckpt_name giga_yet_cnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl
+
+# Giga all balanced
+python main.py  --postags --eval_every 7000 --model CNN --ckpt_name giga_all_cnn_pos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl
+
+############################
+# CNN NO POS
+############################
+
+# WSJ natural distribution with balanced train
+python main.py  --eval_every 32   --model CNN --ckpt_name wsj_natural_cnn_nopos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl
+
+# Giga again
+python main.py  --eval_every 1000 --model CNN --ckpt_name giga_again_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl
+
+# Giga still
+python main.py  --eval_every 2000 --model CNN --ckpt_name giga_still_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl
+
+# Giga too
+python main.py  --eval_every 1000 --model CNN --ckpt_name giga_too_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl
+
+# Giga yet
+python main.py  --eval_every 1000 --model CNN --ckpt_name giga_yet_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl
+
+# Giga all balanced
+python main.py  --eval_every 7000 --model CNN --ckpt_name giga_all_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl
+
+
+############################
+# Load saved model
+############################
+
+python main.py --ckpt_name wsj_natural --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_again --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_still --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_too_attn_pos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_yet_attn_pos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_all_attn_pos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl --load_saved --mode 0
+
+python main.py --ckpt_name wsj_natural_attn_nopos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_again_attn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_still_attn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_too_attn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_yet_attn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_all_attn_nopos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl --load_saved --mode 0
+
+python main.py --ckpt_name wsj_natural_rnn_pos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_again_rnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_still_rnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_too_rnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_yet_rnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_all_rnn_pos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl --load_saved --mode 0
+
+python main.py --ckpt_name wsj_natural_rnn_nopos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_again_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_still_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_too_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_yet_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_all_rnn_nopos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl --load_saved --mode 0
+
+
+python main.py --ckpt_name wsj_natural_cnn_pos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl --load_saved --mode 0
+
+python main.py --ckpt_name giga_again_cnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_still_cnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_too_cnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_yet_cnn_pos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_all_cnn_pos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl --load_saved --mode 0
+
+python main.py --ckpt_name wsj_natural_cnn_nopos --data_dir /home/rldata/new_presup_data/wsj_natural_bal_train/ --pickle /home/rldata/new_presup_data/wsj_balanced/all/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_again_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/again/ --pickle /home/rldata/new_presup_data/giga_individual/again/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_still_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/still/ --pickle /home/rldata/new_presup_data/giga_individual/still/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_too_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/too/ --pickle /home/rldata/new_presup_data/giga_individual/too/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_yet_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_individual/yet/ --pickle /home/rldata/new_presup_data/giga_individual/yet/train/processed.pkl --load_saved --mode 0
+python main.py --ckpt_name giga_all_cnn_nopos --data_dir /home/rldata/new_presup_data/giga_all_balanced/ --pickle /home/rldata/new_presup_data/giga_all_balanced/train/processed.pkl --load_saved --mode 0
+
+
+```
+
 ## Task
 Given a sample text the model must predict if it contains a presupposition triggering. Pressupositions are triggered by keywords such as "also", "again". The keywords are removed since their position make the task easier.
 

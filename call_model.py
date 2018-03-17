@@ -4,7 +4,7 @@ from model import PairWiseAttn, AttnAttn, ConvAttn
 from utils import Progress, make_batches, calc_num_batches, save_model, load_model, one_hot
 import numpy as np
 from pydoc import locate
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 import matplotlib
 matplotlib.use('Agg') # for savefig
 import matplotlib.pyplot as plt
@@ -14,6 +14,7 @@ import sys
 def train_model(params, sess, saver, model, result, data):
   trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen,\
                                                           teY, teYActual = data
+
   global hp
   hp = params
   if result is not None:
@@ -37,12 +38,12 @@ def train_model(params, sess, saver, model, result, data):
           sess, model, batch, fetch, hp.keep_prob, hp.rnn_in_keep_prob, mode=1)
       prog.print_train(cost)
       if step%hp.eval_every==0:
-        va_acc = accuracy(sess, vaX, vaXTags, vaXlen, vaY, model)
+        va_acc = accuracy(sess, vaX, vaXTags, vaXlen, vaY, model, params.score)
         # If best!
         if va_acc>best_acc:
           best_acc = va_acc
           best_epoch = epoch
-          te_acc = accuracy(sess, teX, teXTags, teXlen, teY, model)
+          te_acc = accuracy(sess, teX, teXTags, teXlen, teY, model, params.score)
           result = {'va_acc':va_acc, 'te_acc':te_acc, 'epoch':epoch}
           save_model(sess, saver, hp, result, step, if_global_best=1)
           prog.test_best_val(te_acc)
@@ -52,19 +53,28 @@ def train_model(params, sess, saver, model, result, data):
   prog.train_end()
   print('Best epoch {}, acc: {}'.format(best_epoch+1, best_acc))
 
-def accuracy(sess, teX, teXTags, teXlen, teY, model):
+
+def accuracy(sess, teX, teXTags, teXlen, teY, model, score='acc'):
   """ Return accuracy """
-  y_pred, y_true = get_pred_true(sess, teX, teXTags, teXlen, teY, model)
-  acc = accuracy_score(y_true, y_pred)
-  return acc
+  y_prob, y_pred, y_true = get_pred_true(sess, teX, teXTags, teXlen, teY, model)
+  if score == 'acc':
+    res = accuracy_score(y_true, y_pred)
+  elif score == 'f1':
+    res = f1_score(y_true, y_pred)
+  elif score == 'auc':
+    # Score is a vector of probability of class 1
+    y_scores = y_prob[:,1]
+    res = roc_auc_score(y_true, y_scores)
+  return res
 
 def get_pred_true(sess, teX, teXTags, teXlen, teY, model):
   """
   Get two numpy arrays
   """
-  fetch = [model.batch_size, model.cost, model.y_pred, model.y_true]
+  fetch = [model.batch_size, model.cost, model.y_pred, model.y_true, model.y_prob]
   y_pred = np.zeros(teX.shape[0])
   y_true = np.zeros(teX.shape[0])
+  y_prob = np.zeros((teX.shape[0],2))
   start_id = 0
   for batch in make_batches(teX, teXTags, teXlen, teY, hp.batch_size, shuffle=False):
     result = call_model(sess, model, batch, fetch, 1, 1, mode=0)
@@ -72,9 +82,10 @@ def get_pred_true(sess, teX, teXTags, teXlen, teY, model):
     cost                                 = result[1]
     y_pred[start_id:start_id+batch_size] = result[2]
     y_true[start_id:start_id+batch_size] = result[3]
+    y_prob[start_id:start_id+batch_size] = result[4]
     start_id += batch_size
 
-  return y_pred, y_true
+  return y_prob, y_pred, y_true
 
 def call_model(sess, model, batch, fetch, keep_prob, rnn_in_keep_prob, mode):
   """ Calls models and yields results per batch """
@@ -165,10 +176,33 @@ def save_results(sess, data, model, params):
   trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen,\
                                                           teY, teYActual = data
 
-  y_pred, y_true = get_pred_true(sess, teX, teXTags, teXlen, teY, model)
+  y_prob, y_pred, y_true = get_pred_true(sess, teX, teXTags, teXlen, teY, model)
 
-  with open('res.csv', 'w') as f:
-    f.write("prediction, true, actual_label\n")
+  with open('result', 'a') as f:
+    val_acc = accuracy(sess, vaX, vaXTags, vaXlen, vaY, model, score='acc')
+    val_f1 = accuracy(sess, vaX, vaXTags, vaXlen, vaY, model, score='f1')
+    test_acc = accuracy(sess, teX, teXTags, teXlen, teY, model, score='acc')
+    test_f1 = accuracy(sess, teX, teXTags, teXlen, teY, model, score='f1')
+    test_auc = accuracy(sess, teX, teXTags, teXlen, teY, model, score='auc')
+    l = "{},{},{},{},{},{}\n".format(hp.ckpt_name, val_acc, val_f1, test_acc, test_f1, test_auc)
+    f.write(l)
+
+def save_all_test_results(sess, data, model, params):
+  """
+  Save results to a csv file with 3 columns:
+  | test prediction binary | true binary | true string
+  """
+  global hp
+  hp = params
+  trX, trXTags, trXlen, trY, vaX, vaXTags, vaXlen, vaY, teX, teXTags, teXlen,\
+                                                          teY, teYActual = data
+
+  y_prob, y_pred, y_true = get_pred_true(sess, teX, teXTags, teXlen, teY, model)
+
+  filename = hp.ckpt_name + "_res.csv"
+
+  with open(filename, 'w') as f:
+    f.write(hp.ckpt_name, true, actual_label\n")
     for i, _ in enumerate(y_pred):
       l = "{}, {}, {}\n".format(y_pred[i], y_true[i], teYActual[i])
       f.write(l)

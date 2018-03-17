@@ -5,3 +5,6 @@ tags
 *.csv
 ckpt/
 viz/
+*.nfs*
+result
+csv/
